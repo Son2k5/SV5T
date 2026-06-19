@@ -1,14 +1,14 @@
 <template>
-  <div class="flex bg-gray-200">
+  <div class="flex min-h-screen bg-[#F8FAFC] text-[#1E293B]">
     <div>
       <CommonSidebar v-if="!isMobile" />
       <CommonSidebarMobile v-if="isMobile" />
     </div>
-    <div class="w-full">
+    <div class="w-full min-w-0">
       <CommonTopbar />
-      <div class="mt-4 mb-10 mx-2 md:ml-0 min-h-screen">
+      <main class="mx-auto min-h-screen w-full max-w-[1440px] px-3 py-5 sm:px-5 lg:px-8">
         <slot />
-      </div>
+      </main>
       <CommonFooter />
     </div>
   </div>

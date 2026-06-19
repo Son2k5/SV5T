@@ -1,6 +1,7 @@
 package com.example.SinhVien5T.common.config;
 
 import com.example.SinhVien5T.user.repository.UserRepository;
+import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,9 +24,9 @@ public class ApplicationConfig {
     @Bean
     public UserDetailsService userDetailsService(){
 
-        return username -> userRepository.findByEmail(username).orElseThrow(
-                () -> new RuntimeException("User not found")
-        );
+        return username -> userRepository.findByEmail(username)
+                .map(CustomUserDetails::from)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     @Bean

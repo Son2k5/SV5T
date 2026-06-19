@@ -1,6 +1,47 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+@layer base {
+  html {
+    background: #f8fafc;
+    color: #1e293b;
+  }
+
+  body {
+    background: #f8fafc;
+    color: #1e293b;
+    text-rendering: optimizeLegibility;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  ::selection {
+    background: #bfdbfe;
+    color: #1e293b;
+  }
+}
+
+@layer components {
+  .sv-card {
+    @apply rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)] transition-all duration-200;
+  }
+
+  .sv-card-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.10)];
+  }
+
+  .sv-icon-tile {
+    @apply inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500;
+  }
+
+  .sv-muted {
+    @apply text-[#64748B];
+  }
+}
+
 ::-ms-reveal {
   display: none;
 }

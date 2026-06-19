@@ -8,18 +8,21 @@ import com.example.SinhVien5T.notification.service.EmailService;
 import com.example.SinhVien5T.user.entity.User;
 import com.example.SinhVien5T.auth.entity.RefreshToken;
 import com.example.SinhVien5T.auth.entity.RegisterVerifyToken;
+import com.example.SinhVien5T.auth.entity.TokenPurpose;
 import com.example.SinhVien5T.user.exception.EmailExistException;
-import com.example.SinhVien5T.auth.repository.OtpRepository;
+import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import com.example.SinhVien5T.auth.repository.RefreshTokenRepository;
 import com.example.SinhVien5T.auth.repository.RegisterVerifyTokenRepository;
-import com.example.SinhVien5T.user.exception.UserNotFoundException;
 import com.example.SinhVien5T.user.repository.UserRepository;
 import com.example.SinhVien5T.common.security.JwtService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -30,19 +33,20 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final EmailService emailService;
-    private final OtpRepository otpRepository;
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -56,9 +60,18 @@ public class AuthService {
     @Value("${app.auth.backendUrl}")
     private String backEndUrl;
 
+    @Value("${app.security.cookie.secure:true}")
+    private boolean cookieSecure;
+
+    @Value("${app.security.cookie.same-site:Lax}")
+    private String cookieSameSite;
+
+    @Value("${app.jwt.refresh-expiration}")
+    private long refreshExpirationMs;
+
 
     @Transactional
-    public void register(@RequestBody UserRegisterRequest request) throws Exception {
+    public void register(UserRegisterRequest request) throws Exception {
 
         Optional<User> existUser = userRepository.findByEmail(request.getEmail());
 
@@ -77,14 +90,14 @@ public class AuthService {
                         .build()
         );
 
-        user.setUserPassword(passwordEncoder.encode(request.getUserPassword()));
+        user.setPasswordHash(passwordEncoder.encode(request.getUserPassword()));
         user.setVerified(false);
 
         // Lưu vào db
         userRepository.save(user);
 
         // Xóa tất cả token cũ trước đó
-        registerVerifyTokenRepository.deleteByUser(user);
+        registerVerifyTokenRepository.deleteByUserAndPurpose(user, TokenPurpose.REGISTER);
 
         // Tạo link verify
         String token = UUID.randomUUID().toString();
@@ -93,20 +106,22 @@ public class AuthService {
                 .token(token)
                 .user(user)
                 .expiryDate(LocalDateTime.now().plusMinutes(10))
+                .purpose(TokenPurpose.REGISTER)
                 .build();
 
         registerVerifyTokenRepository.save(registerVerifyToken);
 
         String verifyLink = trimTrailingSlash(backEndUrl) + "/user/auth/verify_register_token?token=" + token; // BE handle endpoint nay (ko phai viet FE)
 
-        emailService.sendVerifyRegisterMail(verifyLink, request.getEmail());
+        sendAfterCommit(() -> emailService.sendVerifyRegisterMail(verifyLink, request.getEmail()));
 
     }
 
-    public void verifyRegisterToken(@RequestParam String token, HttpServletResponse response) throws RuntimeException, IOException {
+    @Transactional
+    public void verifyRegisterToken(String token, HttpServletResponse response) throws RuntimeException, IOException {
 
         try {
-            RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByToken(token)
+            RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.REGISTER)
                     .orElseThrow(() -> new InvalidTokenException("Token không hợp lệ"));
 
             if (registerVerifyToken.getExpiryDate().isBefore(LocalDateTime.now())){
@@ -126,7 +141,8 @@ public class AuthService {
 
             response.sendRedirect(frontEndUrl + "/login?verified=success");
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            log.error("Could not verify register token", e);
             // Trường hợp lỗi khác (token rác, không tìm thấy...)
             response.sendRedirect(frontEndUrl + "/login?error=invalid_token");
         }
@@ -143,10 +159,12 @@ public class AuthService {
             // 1. Xác minh user
             Authentication authentication = authenticationManager.authenticate(authRequest);
 
-            User user = (User) authentication.getPrincipal();
+            CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+            User user = userRepository.findById(principal.getId())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
             if (!user.isVerified() || !user.isActive()){
-                throw new UserNotFoundException("Tài khoản chưa được đăng kí");
+                throw new BadCredentialsException("Invalid credentials");
             }
 
 
@@ -160,14 +178,14 @@ public class AuthService {
          */
 
             // 3. add refresh to Cookie
-            addRefreshCookie(refreshToken, 7 * 24 * 60 * 60, response);
+            addRefreshCookie(refreshToken, refreshCookieMaxAgeSeconds(), response);
 
             // 4. Lưu refreshToken vào db
             RefreshToken rt = RefreshToken.builder()
                     .id(UUID.randomUUID().toString())
                     .token(refreshToken)
                     .user(user)
-                    .expiredAt(LocalDateTime.now().plusDays(7))
+                    .expiredAt(refreshTokenExpiryTime())
                     .ipAddress(jwtService.getIpAddress(request))
                     .userAgent(request.getHeader("User-Agent"))
                     .build();
@@ -203,10 +221,13 @@ public class AuthService {
         addRefreshCookie(null, 0, response);
     }
 
+    @Transactional
     public void missingPassWord(String email) throws MessagingException {
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new EmailExistException("Tài khoản không tồn tại")
         );
+
+        registerVerifyTokenRepository.deleteByUserAndPurpose(user, TokenPurpose.PASSWORD_RESET);
 
         String token = UUID.randomUUID().toString();
 
@@ -214,19 +235,20 @@ public class AuthService {
                 .user(user)
                 .token(token)
                 .expiryDate(LocalDateTime.now().plusMinutes(10))
+                .purpose(TokenPurpose.PASSWORD_RESET)
                 .build();
 
         registerVerifyTokenRepository.save(resetToken);
 
         String resetPwLink = frontEndUrl + "/reset_password?token=" + token;
 
-        emailService.sendResetPwMail(resetPwLink, email);
+        sendAfterCommit(() -> emailService.sendResetPwMail(resetPwLink, email));
     }
 
-    public boolean verifyResetPwToken(@RequestParam String token) throws RuntimeException, IOException {
+    public boolean verifyResetPwToken(String token) throws RuntimeException, IOException {
 
         try {
-            RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByToken(token)
+            RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.PASSWORD_RESET)
                     .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
 
             if (registerVerifyToken.getExpiryDate().isBefore(LocalDateTime.now())){
@@ -238,7 +260,8 @@ public class AuthService {
 
             return true;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            log.warn("Invalid password reset token: {}", e.getMessage());
             // Trường hợp lỗi khác (token rác, không tìm thấy...)
             return false;
         }
@@ -246,7 +269,7 @@ public class AuthService {
 
     @Transactional
     public void resetPassWord(String token, String newPw) throws MessagingException {
-        RegisterVerifyToken resetToken = registerVerifyTokenRepository.findByToken(token)
+        RegisterVerifyToken resetToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.PASSWORD_RESET)
                         .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
 
         if(resetToken.getExpiryDate().isBefore(LocalDateTime.now())){
@@ -257,20 +280,42 @@ public class AuthService {
        registerVerifyTokenRepository.delete(resetToken);
 
         User user = resetToken.getUser();
-        user.setUserPassword(passwordEncoder.encode(newPw));
+        user.setPasswordHash(passwordEncoder.encode(newPw));
         userRepository.save(user);
+        refreshTokenRepository.revokeAllByUser(user);
     }
 
     @Transactional
-    public Map<String, Object> refreshAccessToken(HttpServletRequest request){
+    public Map<String, Object> refreshAccessToken(HttpServletRequest request, HttpServletResponse response){
 
         String refreshToken = getValueCookie("refreshToken", request);
 
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw invalidRefreshToken(response);
+        }
+
+        Claims claims;
+        try {
+            claims = jwtService.validateRefreshToken(refreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw invalidRefreshToken(response);
+        }
+
         RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
                 .filter(rt -> rt.getExpiredAt().isAfter(LocalDateTime.now()))
-                .orElseThrow(() -> new RuntimeException("Token ko hợp lệ"));
+                .filter(rt -> !Boolean.TRUE.equals(rt.getIsRevoked()))
+                .filter(rt -> rt.getUser() != null && Objects.equals(rt.getUser().getPublicId(), claims.getSubject()))
+                .orElseThrow(() -> invalidRefreshToken(response));
 
-        String newAccessToken = jwtService.generateAccessJwt(storedRefreshToken.getUser());
+        User user = storedRefreshToken.getUser();
+        storedRefreshToken.setIsRevoked(true);
+        refreshTokenRepository.save(storedRefreshToken);
+
+        String newAccessToken = jwtService.generateAccessJwt(user);
+        String newRefreshToken = jwtService.generateRefreshJwt(user, request);
+
+        refreshTokenRepository.save(buildRefreshToken(newRefreshToken, user, request));
+        addRefreshCookie(newRefreshToken, refreshCookieMaxAgeSeconds(), response);
 
         return Map.of("accessToken", newAccessToken);
     }
@@ -286,12 +331,12 @@ public class AuthService {
     public void addRefreshCookie(String refreshToken, int maxAge, HttpServletResponse response) {
 
         // Tạo cookie để cho refreshToken vào
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken == null ? "" : refreshToken)
                 .httpOnly(true) // Cookie sẽ không thể bị truy cập bởi JavaScript thông qua document.cookie secure
-                .secure(false) // để tạm dùng trong MT dev (chạy local dùng http)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(maxAge)
-                .sameSite("Strict") // để tạm dùng trong MT dev
+                .sameSite(cookieSameSite)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -318,6 +363,54 @@ public class AuthService {
 
     private String trimTrailingSlash(String value) {
         return value == null ? "" : value.replaceAll("/+$", "");
+    }
+
+    private RefreshToken buildRefreshToken(String token, User user, HttpServletRequest request) {
+        return RefreshToken.builder()
+                .id(UUID.randomUUID().toString())
+                .token(token)
+                .user(user)
+                .expiredAt(refreshTokenExpiryTime())
+                .ipAddress(jwtService.getIpAddress(request))
+                .userAgent(request.getHeader("User-Agent"))
+                .build();
+    }
+
+    private LocalDateTime refreshTokenExpiryTime() {
+        return LocalDateTime.now().plus(Duration.ofMillis(refreshExpirationMs));
+    }
+
+    private int refreshCookieMaxAgeSeconds() {
+        long seconds = Duration.ofMillis(refreshExpirationMs).toSeconds();
+        return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(seconds);
+    }
+
+    private InvalidTokenException invalidRefreshToken(HttpServletResponse response) {
+        addRefreshCookie(null, 0, response);
+        return new InvalidTokenException("Token khong hop le");
+    }
+
+    private void sendAfterCommit(EmailSender emailSender) throws MessagingException {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            emailSender.send();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    emailSender.send();
+                } catch (MessagingException e) {
+                    log.error("Could not send transactional email after commit", e);
+                }
+            }
+        });
+    }
+
+    @FunctionalInterface
+    private interface EmailSender {
+        void send() throws MessagingException;
     }
 }
 

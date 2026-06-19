@@ -1,18 +1,18 @@
 <template>
   <UForm
-    class="flex flex-col gap-6 w-full px-6 xl:px-16"
+    class="flex w-full flex-col gap-5"
     :state="resetPasswordPayloadState"
     :schema="schema"
     @submit="handleResetPassword"
   >
-    <p class="text-4xl text-info-500 font-bold text-center">
+    <p class="text-center text-3xl font-bold text-[#1E293B]">
       Đặt Lại Mật Khẩu
     </p>
     <UFormField
       v-if="!resetPasswordTokenTimedout"
       label="Mật Khẩu Mới"
       name="newPw"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <CommonPopper>
         <UInput
@@ -20,7 +20,7 @@
           class="w-full"
           color="neutral"
           placeholder="Nhập mật khẩu mới..."
-          :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+          :ui="{ base: 'h-11' }"
           :type="passwordShow ? 'text' : 'password'"
         >
           <template #trailing>
@@ -56,14 +56,14 @@
       v-if="!resetPasswordTokenTimedout"
       label="Xác Nhận Mật Khẩu Mới"
       name="confirmPassword"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <UInput
         v-model="resetPasswordPayloadState.confirmPassword"
         class="w-full"
         color="neutral"
         placeholder="Xác nhận mật khẩu mới..."
-        :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+        :ui="{ base: 'h-11' }"
         :type="confirmPasswordShow ? 'text' : 'password'"
       >
         <template #trailing>
@@ -83,7 +83,7 @@
     </UFormField>
     <UButton
       v-if="!resetPasswordTokenTimedout"
-      class="h-10 cursor-pointer"
+      class="h-11 cursor-pointer shadow-sm"
       color="info"
       label="Cập Nhật"
       :loading="isLoading"
@@ -92,13 +92,13 @@
     />
     <p
       v-else
-      class="text-center"
+      class="text-center text-[#64748B]"
     >
       Yêu cầu đã hết hạn! <br> Hãy tạo yêu cầu đổi mật khẩu mới.
     </p>
     <NuxtLink
       to="/login"
-      class="text-info-500 hover:text-muted text-sm text-center"
+      class="text-center text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
     >Quay Lại Đăng Nhập</NuxtLink>
   </UForm>
 </template>

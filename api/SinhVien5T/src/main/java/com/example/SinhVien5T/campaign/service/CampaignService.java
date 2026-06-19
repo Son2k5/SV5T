@@ -1,25 +1,26 @@
 package com.example.SinhVien5T.campaign.service;
 
+import com.example.SinhVien5T.campaign.entity.ApplicationRecord;
+import com.example.SinhVien5T.campaign.repository.ApplicationRecordRepository;
+import com.example.SinhVien5T.campaign.dto.CampaignSummaryResponse;
 import com.example.SinhVien5T.campaign.dto.CriteriaDTO;
 import com.example.SinhVien5T.campaign.dto.StandardDTO;
 import com.example.SinhVien5T.campaign.entity.Campaign;
 import com.example.SinhVien5T.campaign.entity.Criteria;
 import com.example.SinhVien5T.campaign.entity.Evidence;
+import com.example.SinhVien5T.campaign.entity.Level;
 import com.example.SinhVien5T.campaign.entity.Standard;
 import com.example.SinhVien5T.campaign.repository.CampaignRepository;
 import com.example.SinhVien5T.campaign.repository.EvidenceRepository;
 import com.example.SinhVien5T.common.exception.ResourceNotFoundException;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
-import com.example.SinhVien5T.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,184 +28,153 @@ import java.util.stream.Collectors;
 public class CampaignService {
 
         private final CampaignRepository campaignRepository;
+        private final ApplicationRecordRepository applicationRecordRepository;
         private final EvidenceRepository evidenceRepository;
 
+        @Transactional(readOnly = true)
+        public CampaignSummaryResponse getCurrentCampaign(Level level) {
+                Campaign campaign = campaignRepository.findOpenCampaignsByLevel(level, LocalDate.now())
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn đang mở"));
 
-        public List<StandardDTO> getResultTree(Long campaignId) {
+                return toSummaryResponse(campaign);
+        }
 
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        @Transactional(readOnly = true)
+        public List<StandardDTO> getCriteriaTreeByCampaignPublicId(
+                String campaignPublicId,
+                Authentication authentication
+        ) {
+                CustomUserDetails currentUser = getCurrentUser(authentication);
 
-                CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+                Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
 
-                Campaign campaign = campaignRepository.findById(campaignId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét tuyển"));
+                Optional<ApplicationRecord> recordOptional = applicationRecordRepository
+                        .findByUserIdAndCampaignId(currentUser.getId(), campaign.getId());
 
-                List<Evidence> evidenceList = evidenceRepository.findByUserAndCampaign(user.getId(), campaign.getId());
+                Map<Long, Evidence> evidenceMap = new HashMap<>();
 
-                // Chuyển sang map (criteria_id + Evi) để dễ tra cứu
-                Map<Long, Evidence> evidenceMap = evidenceList.stream()
-                                .collect(Collectors.toMap(
+                if (recordOptional.isPresent()) {
+
+                        List<Evidence> evidences =
+                                evidenceRepository.findByApplicationRecordId(
+                                        recordOptional.get().getId()
+                                );
+
+                        evidenceMap.putAll(
+                                evidences.stream()
+                                        .collect(Collectors.toMap(
                                                 evidence -> evidence.getCriteria().getId(),
-                                                evidence -> evidence));
-
-
-                // 1. Lấy toàn bộ criteria phẳng
-                List<Criteria> criteriaList = campaignRepository.findAllCriteria(campaignId);
-
-                // 2. Map sang DTO  (chưa cần quan tâm đến cha - con)
-                Map<Long, CriteriaDTO> criteriaDTOMap = criteriaList.stream()
-                                .collect(Collectors.toMap(
-                                                c -> c.getId(),
-                                                c -> convertToCriteriaDTO(c, evidenceMap)));
-
-
-                // 3. Ktra lại, nếu criteria nào có cha, thêm con vào subList của cha DTO
-                for (Criteria c : criteriaList) {
-                    if (c.getParent() != null) {
-                        CriteriaDTO parent = criteriaDTOMap.get(c.getParent().getId());
-                        CriteriaDTO child = criteriaDTOMap.get(c.getId());
-
-                        parent.getSubCriteriaList().add(child);
-                    }
+                                                evidence -> evidence
+                                        ))
+                        );
                 }
 
-                // 4. Chia thành các List<CriteriaDTO> theo standardId (lát nữa setCriteriaDTOList của từng standard
-                // chỉ cần tra cứu trong map này)
-                Map<Long, List<CriteriaDTO>> rootCriteriaMap  = criteriaList.stream()
-                        .filter(c -> c.getParent() == null)
-                        .collect(Collectors.groupingBy(
-                                c -> c.getStandard().getId(),
+                List<Criteria> criteriaList = campaignRepository.findAllCriteria(campaign.getId());
 
-                                // đóng thành List<CriteriaDTO>
-                                Collectors.mapping(c -> criteriaDTOMap.get(c.getId()), Collectors.toList())
+                Map<Long, CriteriaDTO> criteriaDTOMap = criteriaList.stream()
+                        .collect(Collectors.toMap(
+                                Criteria::getId,
+                                criteria -> convertToCriteriaDTO(criteria, evidenceMap)
                         ));
 
-                // 5. Bắt đầu Build cây
-                List<StandardDTO> resultTree = new ArrayList<>();
+                for (Criteria criteria : criteriaList) {
+                        if (criteria.getParent() != null) {
+                                CriteriaDTO parentDTO = criteriaDTOMap.get(criteria.getParent().getId());
+                                CriteriaDTO childDTO = criteriaDTOMap.get(criteria.getId());
+
+                                if (parentDTO != null && childDTO != null) {
+                                        parentDTO.getSubCriteriaList().add(childDTO);
+                                }
+                        }
+                }
+
+                Map<Long, List<CriteriaDTO>> rootCriteriaMap = criteriaList.stream()
+                        .filter(criteria -> criteria.getParent() == null)
+                        .collect(Collectors.groupingBy(
+                                criteria -> criteria.getStandard().getId(),
+                                Collectors.mapping(
+                                        criteria -> criteriaDTOMap.get(criteria.getId()),
+                                        Collectors.toList()
+                                )
+                        ));
+
+                List<StandardDTO> result = new ArrayList<>();
 
                 for (Standard standard : campaign.getStandards()) {
-                        StandardDTO standardDTO = new StandardDTO();
+                        StandardDTO standardDTO = StandardDTO.builder()
+                                .id(standard.getId())
+                                .name(standard.getName())
+                                .description(standard.getDescription())
+                                .criteriaDTOList(
+                                        rootCriteriaMap.getOrDefault(
+                                                standard.getId(),
+                                                new ArrayList<>()
+                                        )
+                                )
+                                .build();
 
-                        standardDTO.setId(standard.getId());
-                        standardDTO.setName(standard.getName());
-
-                        List<CriteriaDTO> criteriaDTOListForStandard = rootCriteriaMap.getOrDefault(standard.getId(), new ArrayList<>());
-
-                        standardDTO.setCriteriaDTOList(criteriaDTOListForStandard);
-
-                        resultTree.add(standardDTO);
+                        result.add(standardDTO);
                 }
 
-                return resultTree;
-
+                return result;
         }
 
-        public CriteriaDTO convertToCriteriaDTO(Criteria criteria, Map<Long, Evidence> evidenceMap) {
-
-                if (criteria == null) {
-                        return null;
-                }
-
+        private CriteriaDTO convertToCriteriaDTO(
+                Criteria criteria,
+                Map<Long, Evidence> evidenceMap
+        ) {
                 Evidence evidence = evidenceMap.get(criteria.getId());
 
-                String url = evidence != null ? evidence.getEvidenceUrl() : null;
-                Boolean status = evidence != null ? evidence.getStatus() : null;
-                String comment = evidence != null ? evidence.getReviewerComment() : null;
-
                 return CriteriaDTO.builder()
-                                .id(criteria.getId())
-                                .name(criteria.getName())
-                                .description(criteria.getDescription())
-                                .isMandatory(criteria.getIsMandatory())
-                                .requiredChildrenCount(criteria.getRequiredChildrenCount())
-                                .evidenceType(criteria.getEvidenceType().toString())
-
-                                .evidenceUrl(url)
-                                .evidenceStatus(status)
-                                .reviewerComment(comment)
-
-                                .subCriteriaList(new ArrayList<>())
-                                .build();
+                        .id(criteria.getId())
+                        .name(criteria.getName())
+                        .description(criteria.getDescription())
+                        .isMandatory(criteria.getIsMandatory())
+                        .requiredChildrenCount(criteria.getRequiredChildrenCount())
+                        .evidenceType(
+                                criteria.getEvidenceType() == null
+                                        ? null
+                                        : criteria.getEvidenceType().name()
+                        )
+                        .evidenceUrl(
+                                evidence == null
+                                        ? null
+                                        : evidence.getEvidenceUrl()
+                        )
+                        .evidenceStatus(
+                                evidence == null
+                                        ? null
+                                        : evidence.getStatus()
+                        )
+                        .reviewerComment(
+                                evidence == null
+                                        ? null
+                                        : evidence.getReviewerComment()
+                        )
+                        .subCriteriaList(new ArrayList<>())
+                        .build();
         }
 
-                      // -----------------DON'T CARE---------------------//
-     /*
-                                       Plan lấy cây 2
-
-    public List<StandardDTO> getResultTree2(Long campaignId) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        User user = (User) authentication.getPrincipal();
-
-        Campaign campaign = campaignRepository.findCampaignWithDetails(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
-
-        List<Evidence> evidenceList = evidenceRepository.findByUserAndCampaign(user.getId(), campaign.getId());
-
-        // Chuyển sang map (criteria_id + Evi) để dễ tra cứu
-        Map<Long, Evidence> evidenceMap = evidenceList.stream()
-                .collect(Collectors.toMap(
-                        evidence -> evidence.getCriteria().getId(),
-                        evidence -> evidence));
-
-        // Bắt đầu build cây DTO
-        List<StandardDTO> resultTree = new ArrayList<>();
-
-        for (Standard standard : campaign.getStandards()) {
-            StandardDTO standardDTO = new StandardDTO();
-
-            standardDTO.setId(standard.getId());
-            standardDTO.setName(standard.getName());
-
-            List<CriteriaDTO> criteriaDTOList = standard.getCriteriaList().stream()
-                    .map(c -> convertToCriteriaDTO(c, evidenceMap))
-                    .collect(Collectors.toList());
-
-            standardDTO.setCriteriaDTOList(criteriaDTOList);
-
-            resultTree.add(standardDTO);
+        private CampaignSummaryResponse toSummaryResponse(Campaign campaign) {
+                return CampaignSummaryResponse.builder()
+                        .publicId(campaign.getPublicId())
+                        .name(campaign.getName())
+                        .academicYear(campaign.getAcademicYear())
+                        .level(campaign.getLevel().name())
+                        .status(campaign.getStatus())
+                        .startDate(campaign.getStartDate())
+                        .endDate(campaign.getEndDate())
+                        .build();
         }
 
-        return resultTree;
+        private CustomUserDetails getCurrentUser(Authentication authentication) {
+                if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails user)) {
+                        throw new ResourceNotFoundException("Người dùng chưa đăng nhập");
+                }
 
-    }
-
-    public CriteriaDTO convertToCriteriaDTO2(Criteria criteria, Map<Long, Evidence> evidenceMap) {
-
-        if (criteria == null) {
-            return null;
+                return user;
         }
-
-        List<CriteriaDTO> subListDto = new ArrayList<>();
-
-        if (criteria.getCriteriaList() != null && !criteria.getCriteriaList().isEmpty()) {
-            subListDto = criteria.getCriteriaList().stream()
-                    .map(c -> convertToCriteriaDTO(c, evidenceMap))
-                    .toList();
-        }
-
-        Evidence evidence = evidenceMap.get(criteria.getId());
-
-        String url = evidence != null ? evidence.getEvidenceUrl() : null;
-        String status = evidence != null ? evidence.getStatus() : null;
-        String comment = evidence != null ? evidence.getReviewerComment() : null;
-
-        return CriteriaDTO.builder()
-                .id(criteria.getId())
-                .name(criteria.getName())
-                .description(criteria.getDescription())
-                .isMandatory(criteria.getIsMandatory())
-                .requiredChildrenCount(criteria.getRequiredChildrenCount())
-                .evidenceType(criteria.getEvidenceType().toString())
-
-                .evidenceUrl(url)
-                .evidenceStatus(status)
-                .reviewerComment(comment)
-
-                .subCriteriaList(subListDto)
-                .build();
-    }
-
-     */
 }

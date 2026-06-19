@@ -1,88 +1,133 @@
 <template>
-  <div class="flex flex-col lg:grid grid-cols-3 gap-10 lg:gap-4">
-    <div class="flex flex-col gap-10 col-span-2">
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.9fr)]">
+    <div class="flex flex-col gap-6">
       <CommonPageSection
         title="Thông tin Sinh viên"
         title-icon="i-heroicons-user-solid"
+        inner-class="!block p-0"
       >
-        <div class="flex flex-wrap gap-y-2">
+        <div class="grid grid-cols-1 lg:grid-cols-2">
           <div
             v-for="info in GENERALINFO"
             :key="info.label"
-            class="w-1/2 grid grid-cols-1 md:grid-cols-[30%_auto]"
+            class="group flex gap-3 border-b border-[#E5E7EB] px-5 py-4 transition hover:bg-[#F8FAFC] lg:[&:nth-last-child(-n+2)]:border-b-0"
           >
-            <h3 class="font-bold text-info">
-              {{ info.label }}:
-            </h3>
-            <p class="text-wrap">
-              {{ info.desc }}
-            </p>
+            <div class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#3B82F6]">
+              <UIcon
+                name="i-lucide-circle-dot"
+                class="size-3"
+              />
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                {{ info.label }}
+              </h3>
+              <p class="mt-1 break-words text-sm font-semibold text-[#1E293B]">
+                {{ info.desc || '-' }}
+              </p>
+            </div>
           </div>
         </div>
       </CommonPageSection>
-      <CommonPageSection inner-class="flex-wrap gap-6">
-        <h2 class="text-2xl font-bold w-full text-center">
-          Truy Cập Nhanh
-        </h2>
-        <div class="grid grid-cols-2 lg:grid-cols-3 w-full gap-6">
-          <UButton
+
+      <CommonPageSection inner-class="!block">
+        <div class="mb-5 flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-[#1E293B]">
+              Truy cập nhanh
+            </h2>
+            <p class="mt-1 text-sm text-[#64748B]">
+              Các tác vụ thường dùng cho hồ sơ và minh chứng
+            </p>
+          </div>
+          <UIcon
+            name="i-lucide-sparkles"
+            class="size-5 text-[#3B82F6]"
+          />
+        </div>
+        <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <button
             v-for="action in QUICKACCESS"
             :key="action.label"
-            variant="ghost"
-            color="info"
-            class="w-full cursor-pointer"
+            class="group rounded-2xl border border-[#E5E7EB] bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:bg-blue-50/40 hover:shadow-[0_16px_36px_rgba(59,130,246,0.12)]"
+            type="button"
           >
-            <template #default>
-              <div class="mx-auto">
-                <UIcon
-                  :name="action.icon"
-                  class="size-6"
-                />
-                <h3 class="font-bold text-lg">
-                  {{ action.label }}
-                </h3>
-                <p class="text-dimmed">
-                  {{ action.desc }}
-                </p>
-              </div>
-            </template>
-          </UButton>
+            <div class="mb-4 flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-[#3B82F6] transition group-hover:scale-105 group-hover:bg-[#3B82F6] group-hover:text-white">
+              <UIcon
+                :name="action.icon"
+                class="size-6"
+              />
+            </div>
+            <h3 class="text-base font-bold text-[#1E293B]">
+              {{ action.label }}
+            </h3>
+            <p class="mt-1 text-sm leading-6 text-[#64748B]">
+              {{ action.desc }}
+            </p>
+          </button>
         </div>
       </CommonPageSection>
     </div>
-    <div class="flex flex-col gap-10">
-      <CommonPageSection inner-class="bg-info-300 rounded-lg p-10 flex-col text-white gap-2">
-        <h3 class="text-2xl font-bold">
+
+    <div class="flex flex-col gap-6">
+      <CommonPageSection
+        container-class="overflow-hidden border-0 bg-gradient-to-br from-[#3B82F6] to-[#60A5FA] text-white"
+        inner-class="relative flex-col items-start gap-4 p-7"
+      >
+        <div class="absolute -right-10 -top-10 size-36 rounded-full bg-white/15" />
+        <div class="absolute -bottom-12 right-10 size-28 rounded-full bg-white/10" />
+        <div class="flex size-12 items-center justify-center rounded-2xl bg-white/20">
+          <UIcon
+            name="i-lucide-trophy"
+            class="size-6"
+          />
+        </div>
+        <h3 class="relative text-lg font-semibold text-blue-50">
           Tổng Điểm Xét Duyệt
         </h3>
-        <h2 class="text-5xl font-bold">
+        <h2 class="relative text-5xl font-bold tracking-tight">
           465 / 500
         </h2>
-        <p class="text-lg">
+        <p class="relative max-w-sm text-sm leading-6 text-blue-50">
           Số điểm xuất sắc! Hãy tiếp tục duy trì tiến độ!
         </p>
       </CommonPageSection>
+
       <CommonPageSection
         title="Tiến Độ 5 Tiêu Chí"
         container-class="h-full"
-        inner-class="h-full"
+        inner-class="h-full !block"
         title-icon="i-heroicons-bolt-solid"
       >
-        <div class="flex flex-col w-full h-full gap-4">
+        <div class="flex h-full w-full flex-col gap-5">
           <div
             v-for="progress in PROGRESSES"
             :key="progress.label"
-            class="h-full"
+            class="space-y-2"
           >
-            <div class="flex justify-between font-bold w-full">
-              <p>{{ progress.label }}</p>
-              <p>{{ progress.score }}<span class="font-normal text-dimmed"> / 100</span></p>
+            <div class="flex w-full items-center justify-between gap-3">
+              <p class="text-sm font-semibold text-[#1E293B]">
+                {{ progress.label }}
+              </p>
+              <p class="text-sm font-bold text-[#2563EB]">
+                {{ progress.score }}<span class="font-normal text-[#64748B]"> / 100</span>
+              </p>
             </div>
-            <UProgress
-              v-model="progress.score"
-              color="info"
-            />
+            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] transition-all duration-300"
+                :style="{ width: `${progress.score}%` }"
+              />
+            </div>
           </div>
+          <UButton
+            label="Nộp thêm minh chứng"
+            icon="i-lucide-arrow-right"
+            trailing
+            variant="soft"
+            color="info"
+            class="mt-2 w-full justify-center"
+          />
         </div>
       </CommonPageSection>
     </div>
@@ -94,54 +139,82 @@ import type { ProfileData } from '~/types/profile'
 
 const { data: profile } = useNuxtData<ProfileData>('current-user')
 
-const GENERALINFO = ref([
+const GENERALINFO = computed(() => [
   {
     label: 'Mã Sinh viên',
     desc: profile.value?.studentCode,
+  },
+  {
+    label: 'Họ và tên',
+    desc: profile.value?.fullName,
+  },
+  {
+    label: 'Email tài khoản',
+    desc: profile.value?.email,
+  },
+  {
+    label: 'Email liên hệ',
+    desc: profile.value?.contactEmail,
   },
   {
     label: 'Số Điện thoại',
     desc: profile.value?.phoneNumber,
   },
   {
-    label: 'Họ và tên',
-    desc: `${profile.value?.lastName} ${profile.value?.firstName}`,
-  },
-  {
-    label: 'Email',
-    desc: profile.value?.email,
-  },
-  {
     label: 'Giới tính',
     desc: formatGender[profile.value?.gender ?? 'OTHER'],
   },
   {
-    label: 'Ngành',
-    desc: profile.value?.fieldOfStudy,
-  },
-  {
     label: 'Ngày sinh',
-    desc: formatDate(profile.value?.dob),
+    desc: formatDate(profile.value?.birthDay),
   },
   {
-    label: 'Khoa',
-    desc: profile.value?.faculty,
+    label: 'Số CCCD/CMND',
+    desc: profile.value?.identityCardNumber,
   },
   {
     label: 'Dân tộc',
     desc: profile.value?.ethnicity,
   },
   {
-    label: 'Lớp',
-    desc: profile.value?.classCode,
+    label: 'Trường',
+    desc: profile.value?.school,
   },
   {
-    label: 'Địa chỉ',
-    desc: `${profile.value?.commune} - ${profile.value?.province}`,
+    label: 'Ngành',
+    desc: profile.value?.major,
+  },
+  {
+    label: 'Khoa',
+    desc: profile.value?.faculty,
+  },
+  {
+    label: 'Sinh viên năm',
+    desc: profile.value?.academicYear?.toString(),
+  },
+  {
+    label: 'Lớp',
+    desc: profile.value?.administrativeClass,
+  },
+  {
+    label: 'Địa chỉ thường trú',
+    desc: formatAddress(profile.value?.permanentAddress),
+  },
+  {
+    label: 'Địa chỉ tạm trú',
+    desc: formatAddress(profile.value?.temporaryAddress),
   },
   {
     label: 'Chức vụ',
     desc: profile.value?.currentPosition,
+  },
+  {
+    label: 'Chức vụ Đoàn hội',
+    desc: profile.value?.unionPosition,
+  },
+  {
+    label: 'Đảng viên / Đoàn viên',
+    desc: formatPoliticalStatus[profile.value?.politicalStatus ?? 'NONE'],
   },
 ])
 

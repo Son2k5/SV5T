@@ -1,75 +1,79 @@
 package com.example.SinhVien5T.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_name", unique = true, length = 100)
-    private String userName;
+    @Column(name = "public_id", nullable = false, unique = true, length = 36, updatable = false)
+    private String publicId;
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
-    private String userPassword;
+    private String passwordHash;
 
     @Column(name = "role")
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
+    @Lob
+    @Column(name = "avatar")
     private String avatar;
 
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
+    @Column(name = "avatar_public_id", length = 255)
+    private String avatarPublicId;
 
-    private String ethnicity;
+    @Column(name = "avatar_resource_type", length = 30)
+    private String avatarResourceType;
 
-    @Enumerated(EnumType.STRING)
-    private Gender gender;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private UserDetail detail;
 
-    @Column(name = "birth_day")
-    private LocalDate birthDay;
-
-    @Column(columnDefinition = "TEXT")
-    private String address;
-
-    @Column(name = "faculty")
-    private String faculty;
-
-    @Column(name = "class")
-    private String classId;
-
-    @Column(name = "student_code", length = 50)
-    private String studentCode;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UserAddress> addresses = new ArrayList<>();
 
     @Column(name = "is_verified")
     @Builder.Default
-    private boolean isVerified = true;
+    private boolean isVerified = false;
 
     @Column(name = "is_active")
     @Builder.Default
@@ -89,44 +93,22 @@ public class User implements UserDetails {
     @Column(name = "updated_by", length = 100)
     private String updatedBy;
 
-    public String getUserName() {
-        return this.userName;
+    public void setDetail(UserDetail detail) {
+        this.detail = detail;
+        if (detail != null) {
+            detail.setUser(this);
+        }
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("role:" + this.role.name()));
+    public void addAddress(UserAddress address) {
+        addresses.add(address);
+        address.setUser(this);
     }
 
-    @Override
-    public String getPassword() {
-        return this.userPassword;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.email;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {  // Mặc định true; customize nếu cần thêm field
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {  // Mặc định true
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() { // Mặc định true
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {  // Dựa trên field enabled
-        return this.isActive;
+    @PrePersist
+    public void prePersist() {
+        if (this.publicId == null) {
+            this.publicId = UUID.randomUUID().toString();
+        }
     }
 }
-
-

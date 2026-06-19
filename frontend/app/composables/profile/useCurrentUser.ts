@@ -1,24 +1,28 @@
-import { CurrentUserEndpoint } from '~/constants/endpoints'
-import type { ApiResponse, ProfileResponse } from '~/types/auth'
+import { CurrentUserAvatarEndpoint, CurrentUserEndpoint } from '~/constants/endpoints'
+import type { ApiResponse } from '~/types/auth'
+import type { ProfileData, UserProfileUpdateRequest } from '~/types/profile'
 import { getErrorMessage } from '~/utils/errors'
 
 export const useCurrentUser = async () => {
-  const isLoading = ref<boolean>(false)
+  const isLoading = ref(false)
+  const avatarLoading = ref(false)
   const toast = useToast()
   const { accessToken } = useAuth()
 
+  const getAuthHeaders = () =>
+    accessToken.value
+      ? { Authorization: `Bearer ${accessToken.value}` }
+      : undefined
+
   const fetchCurrentUser = async () => {
     try {
-      const { data } = await $fetch<ProfileResponse>(CurrentUserEndpoint(), {
+      const { data } = await $fetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken.value}`,
-        },
+        headers: getAuthHeaders(),
       })
 
       return data
     }
-
     catch (error) {
       toast.add({
         title: 'Thất bại nhận thông tin!',
@@ -27,31 +31,32 @@ export const useCurrentUser = async () => {
       })
     }
   }
-  const { data: profile } = await useAsyncData(`current-user`, () => fetchCurrentUser())
 
-  const updateCurrentUser = async (user: Record<string, unknown>) => {
+  const { data: profile } = await useAsyncData('current-user', () => fetchCurrentUser())
+
+  const updateCurrentUser = async (payload: UserProfileUpdateRequest) => {
     isLoading.value = true
+
     try {
-      const { message } = await $fetch<ApiResponse>(CurrentUserEndpoint(), {
+      const { data, message } = await $fetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${accessToken.value}`,
-        },
-        body: {
-          ...user,
-        },
+        headers: getAuthHeaders(),
+        body: payload,
       })
+
       toast.add({
-        title: 'Cập nhật Thông tin Thành công!!',
+        title: 'Cập nhật thông tin thành công!',
         description: message,
         color: 'success',
       })
+
       await refreshNuxtData('current-user')
-      return navigateTo(`/dashboard/${profile.value?.id}`)
+
+      return data
     }
     catch (error) {
       toast.add({
-        title: 'Đăng nhập thất bại!',
+        title: 'Cập nhật thông tin thất bại!',
         description: getErrorMessage(error, 'Vui lòng thử lại sau.'),
         color: 'error',
       })
@@ -61,5 +66,41 @@ export const useCurrentUser = async () => {
     }
   }
 
-  return { profile, updateCurrentUser, isLoading }
+  const updateCurrentUserAvatar = async (file: File) => {
+    avatarLoading.value = true
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const { data, message } = await $fetch<ApiResponse<ProfileData>>(CurrentUserAvatarEndpoint(), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: formData,
+      })
+
+      toast.add({
+        title: 'Cập nhật ảnh đại diện thành công!',
+        description: message,
+        color: 'success',
+      })
+
+      profile.value = data
+      await refreshNuxtData('current-user')
+
+      return data
+    }
+    catch (error) {
+      toast.add({
+        title: 'Cập nhật ảnh đại diện thất bại!',
+        description: getErrorMessage(error, 'Vui lòng thử lại sau.'),
+        color: 'error',
+      })
+    }
+    finally {
+      avatarLoading.value = false
+    }
+  }
+
+  return { profile, updateCurrentUser, updateCurrentUserAvatar, isLoading, avatarLoading }
 }

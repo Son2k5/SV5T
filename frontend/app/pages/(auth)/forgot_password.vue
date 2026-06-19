@@ -1,32 +1,32 @@
 <template>
   <UForm
-    class="flex flex-col gap-6 w-full px-6 xl:px-16"
+    class="flex w-full flex-col gap-5"
     :state="missingPasswordPayloadState"
     :schema="schema"
     @submit="handleMissingPassword"
   >
-    <p class="text-4xl text-info-500 font-bold text-center">
+    <p class="text-center text-3xl font-bold text-[#1E293B]">
       Quên Mật Khẩu
     </p>
-    <p class="text-center">
+    <p class="text-center text-sm text-[#64748B]">
       Nhận hướng dẫn khôi phục trong email
     </p>
     <UFormField
       label="Email"
       name="email"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <UInput
         v-model="missingPasswordPayloadState.email"
         class="w-full"
         color="neutral"
         placeholder="Nhập email..."
-        :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+        :ui="{ base: 'h-11' }"
         autocomplete="email"
       />
     </UFormField>
     <UButton
-      class="h-10 cursor-pointer"
+      class="h-11 cursor-pointer shadow-sm"
       color="info"
       label="Gửi Liên Kết"
       :ui="{ label: ['mx-auto text-lg', isLoading && 'hidden'], leadingIcon: 'mx-auto' }"
@@ -35,7 +35,7 @@
     />
     <NuxtLink
       to="/login"
-      class="text-info-500 hover:text-muted text-sm text-center"
+      class="text-center text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
     >Quay Lại Đăng Nhập</NuxtLink>
   </UForm>
 </template>

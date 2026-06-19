@@ -19,3 +19,4 @@ export const VerifyResetEndpoint = () => endpoint('/user/auth/verify_reset_token
 export const GetCriteriaEndpoint = () => endpoint('/user/campaign/get_campaign')
 
 export const CurrentUserEndpoint = () => endpoint('/user/profile')
+export const CurrentUserAvatarEndpoint = () => endpoint('/user/profile/avatar')

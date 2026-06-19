@@ -7,22 +7,39 @@ export const useAuth = () => {
 
   const accessToken = useState<string | null>('accessToken', () => null)
 
+  if (import.meta.client && !accessToken.value) {
+    accessToken.value = sessionStorage.getItem('accessToken')
+  }
+
+  const setAccessToken = (token: string | null) => {
+    accessToken.value = token
+
+    if (import.meta.client) {
+      if (token) {
+        sessionStorage.setItem('accessToken', token)
+      }
+      else {
+        sessionStorage.removeItem('accessToken')
+      }
+    }
+  }
+
   const refreshAccessToken = async () => {
     try {
-      const headers = useRequestHeaders(['cookie'])
+      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
       const { data } = await $fetch<{ data: { accessToken: string }, message: string }>(refreshAccessTokenEndpoint(), {
         method: 'POST',
         credentials: 'include',
-        headers,
+        ...(headers ? { headers } : {}),
       })
       if (data?.accessToken) {
-        accessToken.value = data.accessToken
+        setAccessToken(data.accessToken)
         return true
       }
       return false
     }
     catch {
-      accessToken.value = null
+      setAccessToken(null)
       return false
     }
   }
@@ -35,11 +52,15 @@ export const useAuth = () => {
         credentials: 'include',
       })
 
+      if (!data?.accessToken) {
+        throw new Error('Missing access token')
+      }
+
       toast.add({
         title: 'Đăng nhập thành công!',
         description: message,
       })
-      accessToken.value = data.accessToken
+      setAccessToken(data.accessToken)
       return data
     }
     catch (error) {
@@ -64,7 +85,8 @@ export const useAuth = () => {
       })
     }
     finally {
-      navigateTo('/login')
+      setAccessToken(null)
+      await navigateTo('/login')
     }
   }
 

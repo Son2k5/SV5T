@@ -4,34 +4,19 @@ export const sidebarOptions = [
     icon: 'i-heroicons-home-solid',
     path: '/dashboard',
   },
-  /* {
-    name: 'Quản lý Sinh viên',
-    icon: 'i-heroicons-users-solid',
-    path: '/dashboard/students',
-  }, */
   {
-    name: 'Đăng ký hồ sơ',
+    name: 'Xét minh chứng',
     icon: 'i-heroicons-clipboard-document-check-solid',
-    path: '/dashboard/criteria',
-  },
-  /* {
-    name: 'Quản lý Tiêu chí',
-    icon: 'i-heroicons-clipboard-document-check-solid',
-    path: '',
+    path: '/dashboard/applicationRecord/new',
   },
   {
-    name: 'Danh sách 5 Tốt',
-    icon: 'i-heroicons-trophy-solid',
-    path: '',
-  },
-  {
-    name: 'Cài đặt Hệ thống',
-    icon: 'i-heroicons-cog-6-tooth-solid',
+    name: 'Đăng kí sự kiện',
+    icon: 'i-heroicons-calendar-days-solid',
     path: '',
   },
   {
     name: 'Trợ giúp',
     icon: 'i-heroicons-question-mark-circle-solid',
     path: '',
-  }, */
+  },
 ]

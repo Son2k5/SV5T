@@ -1,17 +1,17 @@
 <template>
   <UForm
-    class="flex flex-col gap-6 w-full px-6 xl:px-16"
+    class="flex w-full flex-col gap-5"
     :state="logInPayloadState"
     :schema="schema"
     @submit="handleLogIn"
   >
-    <p class="text-4xl text-info-500 font-bold text-center">
+    <p class="text-center text-3xl font-bold text-[#1E293B]">
       Đăng Nhập
     </p>
     <UFormField
       label="Email"
       name="email"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <CommonPopper>
         <UInput
@@ -19,7 +19,7 @@
           class="w-full"
           color="neutral"
           placeholder="Nhập email..."
-          :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+          :ui="{ base: 'h-11' }"
           autocomplete="email"
         />
         <template #content>
@@ -30,14 +30,14 @@
     <UFormField
       label="Mật Khẩu"
       name="userPassword"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <UInput
         v-model="logInPayloadState.userPassword"
         class="w-full"
         color="neutral"
         placeholder="Nhập mật khẩu..."
-        :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+        :ui="{ base: 'h-11' }"
         :type="passwordShow ? 'text' : 'password'"
       >
         <template #trailing>
@@ -63,22 +63,22 @@
       />
       <NuxtLink
         to="/forgot_password"
-        class="text-info-500 hover:text-muted text-sm"
+        class="text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
       >Quên Mật Khẩu</NuxtLink>
     </div>
     <UButton
-      class="h-10 cursor-pointer"
+      class="h-11 cursor-pointer shadow-sm"
       color="info"
       label="Đăng Nhập"
       :loading="isLoading"
       :ui="{ label: ['mx-auto text-lg', isLoading && 'hidden'], leadingIcon: 'mx-auto' }"
       type="submit"
     />
-    <p class="text-sm mx-auto">
+    <p class="mx-auto text-sm text-[#64748B]">
       Chưa có tài khoản?
       <NuxtLink
         to="/signup"
-        class="text-info-500 hover:text-muted"
+        class="font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
       >Đăng Ký</NuxtLink>
     </p>
   </UForm>
@@ -103,14 +103,20 @@ const schema = z.object({
   userPassword: z.string().min(1, 'Vui lòng nhập mật khẩu!'),
 })
 
-const { logIn } = useAuth()
+const { accessToken, logIn } = useAuth()
 
 const handleLogIn = async () => {
+  if (isLoading.value) return
+
   isLoading.value = true
-  const data = await logIn(logInPayloadState)
-  isLoading.value = false
-  if (data) {
-    navigateTo('/dashboard/me')
+  try {
+    const data = await logIn(logInPayloadState)
+    if (data && accessToken.value) {
+      await router.replace('/dashboard')
+    }
+  }
+  finally {
+    isLoading.value = false
   }
 }
 

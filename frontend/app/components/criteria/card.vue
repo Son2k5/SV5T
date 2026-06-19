@@ -1,45 +1,53 @@
 <template>
   <div class="w-full h-max">
     <div
-      class="flex w-full gap-8 bg-gray-200 rounded-lg ring-info hover:ring-2 hover:shadow-xl hover:scale-102 transition py-2 px-4 cursor-pointer"
+      class="sv-card sv-card-hover flex w-full cursor-pointer flex-col gap-4 p-5 lg:flex-row lg:items-center"
       @click="() => { isOpen = !isOpen }"
     >
-      <div class="flex flex-col gap-2 h-24">
-        <div class="bg-info-300 rounded-lg h-full w-24 flex justify-center items-center font-bold text-5xl">
+      <div class="flex items-center gap-3 lg:w-32 lg:flex-col">
+        <div class="flex size-16 items-center justify-center rounded-2xl bg-blue-50 text-2xl font-bold text-[#2563EB] lg:size-20 lg:text-4xl">
           {{ criteria.id }}
         </div>
         <div
           v-if="criteria.isMandatory"
-          class="font-bold text-lg text-center bg-error-400 rounded-lg"
+          class="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-600"
         >
           Bắt buộc
         </div>
       </div>
-      <div class="w-full">
-        <h2 class="text-info text-2xl font-bold">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-xl font-bold text-[#1E293B]">
           {{ criteria.name }}
         </h2>
-        <p>{{ criteria.description }}</p>
+        <p class="mt-2 text-sm leading-6 text-[#64748B]">
+          {{ criteria.description }}
+        </p>
       </div>
-      <div class="w-100 border-l-2 border-gray-300 flex flex-col pl-2 gap-2 justify-center">
-        <div class="flex gap-2 items-center">
-          <p>Trạng thái:</p>
+      <div class="flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4 lg:w-80">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm font-semibold text-[#64748B]">
+            Trạng thái
+          </p>
           <UBadge
-            size="xl"
+            class="rounded-full"
             :label="criteria.evidenceStatus ? `● Đã Nộp` : `● Chưa Nộp`"
             :color="criteria.evidenceStatus ? 'success' : 'warning'"
           />
         </div>
-        <p>Hình thức nộp: {{ criteria.evidenceType }}</p>
-        <p>Nhận xét: {{ criteria.reviewerComment ? '1' : '0' }}</p>
+        <p class="text-sm text-[#64748B]">
+          Hình thức nộp: <span class="font-semibold text-[#1E293B]">{{ criteria.evidenceType }}</span>
+        </p>
+        <p class="text-sm text-[#64748B]">
+          Nhận xét: <span class="font-semibold text-[#1E293B]">{{ criteria.reviewerComment ? '1' : '0' }}</span>
+        </p>
       </div>
     </div>
     <div
-      class="transition-all flex flex-col overflow-hidden bg-gray-200 rounded-lg px-4 gap-4"
-      :class="isOpen ? 'h-60' : 'h-0'"
+      class="mt-3 flex flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white px-5 transition-all duration-300"
+      :class="isOpen ? 'max-h-[520px] py-5 opacity-100' : 'max-h-0 py-0 opacity-0'"
     >
-      <div class="flex gap-8 mt-2">
-        <h2 class="text-xl text-info font-bold">
+      <div class="grid gap-5 lg:grid-cols-[180px_minmax(0,1fr)_auto]">
+        <h2 class="text-lg font-bold text-[#1E293B]">
           Nộp Minh chứng
         </h2>
         <div class="flex flex-col gap-2">
@@ -55,19 +63,19 @@
         </div>
         <UButton
           label="Lưu"
-          class="mt-auto px-10 cursor-pointer"
+          class="mt-auto cursor-pointer px-8 shadow-sm"
           :loading="isLoading"
           :ui="{ label: ['mx-auto text-lg', isLoading && 'hidden'], leadingIcon: 'mx-auto' }"
           @click="handleSubmit"
         />
       </div>
       <div class="w-full">
-        <h2 class="text-xl text-info font-bold">
+        <h2 class="text-lg font-bold text-[#1E293B]">
           Nhận xét
         </h2>
         <div
           v-if="criteria.reviewerComment"
-          class="flex items-center gap-8 px-2"
+          class="mt-3 flex items-center gap-5 rounded-2xl bg-[#F8FAFC] p-3"
         >
           <div class="shrink-0 flex items-center gap-2">
             <UAvatar
@@ -92,7 +100,7 @@
         </div>
         <p
           v-else
-          class="mt-6 px-2"
+          class="mt-3 rounded-2xl bg-[#F8FAFC] p-4 text-sm text-[#64748B]"
         >
           Không có nhận xét
         </p>

@@ -1,48 +1,62 @@
 <template>
-  <div class="sticky top-0 right-0 flex items-center p-2 h-12 bg-info-300 rounded-b-lg shadow-xl md:mr-2 z-99">
-    <UButton
-      color="info"
-      class="relative h-full w-10 cursor-pointer overflow-hidden"
-      :icon="sidebarOpen ? 'i-lucide-panel-right-open' : 'i-lucide-panel-left-open'"
-      @click="toggleSidebarOpen"
-    >
-      <div class="absolute hidden md:block -bottom-2 -right-2 size-6 bg-white rounded-lg">
-        <p class="text-black mr-1">
-          k
-        </p>
-      </div>
-    </UButton>
-    <UInput
-      color="neutral"
-      class="ml-4 h-full w-50 md:w-70"
-      placeholder="Tìm Kiếm..."
-      icon="i-lucide-search"
-      type="search"
-      :ui="{ base: 'h-full' }"
-    />
-    <UDropdownMenu :items="profileActions">
+  <header class="sticky top-0 z-40 border-b border-blue-200/40 bg-gradient-to-b from-[#60A5FA] to-[#3B82F6] px-3 py-3 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:px-5 lg:px-8">
+    <div class="mx-auto flex h-12 w-full max-w-[1440px] items-center gap-3">
       <UButton
-        class="ml-auto cursor-pointer"
-        color="info"
+        color="neutral"
         variant="ghost"
-      >
-        <UUser
-          :avatar="{ src: profile?.avatar ?? 'profilePlaceholder.png' }"
-          :ui="{ name: 'text-white', description: 'text-white' }"
+        class="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl !p-0 text-[#64748B] transition-colors duration-200 hover:bg-blue-50 hover:text-[#2563EB]"
+        :icon="sidebarOpen ? 'i-lucide-panel-right-open' : 'i-lucide-panel-left-open'"
+        :ui="{ leadingIcon: 'size-5 shrink-0' }"
+        aria-label="Toggle sidebar"
+        @click="toggleSidebarOpen"
+      />
+      <UInput
+        color="neutral"
+        class="h-10 w-full max-w-80"
+        placeholder="Tìm kiếm..."
+        icon="i-lucide-search"
+        type="search"
+        :ui="{ base: 'h-10 rounded-2xl bg-[#F8FAFC] border-[#E5E7EB] text-[#1E293B]' }"
+      />
+
+      <div class="ml-auto hidden items-center gap-1 sm:flex">
+        <UButton
+          v-for="action in headerActions"
+          :key="action.icon"
+          color="neutral"
+          variant="ghost"
+          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl !p-0 text-[#64748B] transition-colors duration-200 hover:bg-blue-50 hover:text-[#2563EB]"
+          :icon="action.icon"
+          :ui="{ leadingIcon: 'size-5 shrink-0' }"
+          :aria-label="action.label"
         />
-      </UButton>
-      <template #user-profile>
-        <div>
-          <p class="font-bold">
-            {{ profile?.firstName }}
-          </p>
-          <p class="text-dimmed text-sm text-start">
-            {{ profile?.currentPosition }}
-          </p>
-        </div>
-      </template>
-    </UDropdownMenu>
-  </div>
+      </div>
+
+      <UDropdownMenu :items="profileActions">
+        <UButton
+          class="cursor-pointer rounded-2xl   px-2 py-3  hover:bg-[#F8FAFC]"
+          color="neutral"
+          variant="ghost"
+        >
+          <UUser
+            :avatar="{ src: profile?.avatar ?? 'profilePlaceholder.png' }"
+            :name="profile?.fullName ?? 'Profile Name'"
+            :ui="{ name: 'hidden md:block text-[#1E293B] font-semibold', description: 'hidden md:block text-[#64748B]' }"
+          />
+        </UButton>
+        <template #user-profile>
+          <div>
+            <p class="font-bold">
+              {{ profile?.fullName ?? '...' }}
+            </p>
+            <p class="text-dimmed text-sm text-start">
+              {{ profile?.currentPosition }}
+            </p>
+          </div>
+        </template>
+      </UDropdownMenu>
+    </div>
+  </header>
 </template>
 
 <script setup lang="ts">
@@ -57,6 +71,21 @@ const handleLogOut = async () => {
   await logOut()
 }
 
+const headerActions = [
+  {
+    icon: 'i-lucide-bell',
+    label: 'Thông báo',
+  },
+  {
+    icon: 'i-lucide-message-square',
+    label: 'Tin nhắn',
+  },
+  {
+    icon: 'i-lucide-settings',
+    label: 'Cài đặt',
+  },
+]
+
 const profileActions = ref<DropdownMenuItem[]>([
   {
     slot: 'user-profile' as const,
@@ -65,7 +94,7 @@ const profileActions = ref<DropdownMenuItem[]>([
   {
     label: 'Thông Tin Cá Nhân',
     icon: 'i-heroicons-user-solid',
-    onSelect: () => navigateTo(`/dashboard/${profile.value?.id}`),
+    onSelect: () => navigateTo('/dashboard/me/edit'),
   },
   {
     label: 'Đăng Xuất',

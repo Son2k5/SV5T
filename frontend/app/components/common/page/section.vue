@@ -1,24 +1,28 @@
 <template>
   <div
-    class="w-full bg-white rounded-lg shadow-xl flex flex-col"
+    class="sv-card w-full flex flex-col overflow-hidden"
     :class="props.containerClass"
   >
     <div
       v-if="title"
-      class="bg-info-300 rounded-t-lg p-4 flex items-center gap-2"
+      class="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-5 py-4"
     >
-      <UIcon
+      <div
         v-if="titleIcon"
-        :name="titleIcon"
-        class="bg-white size-6"
-      />
-      <h2 class="text-white text-2xl font-bold">
+        class="sv-icon-tile"
+      >
+        <UIcon
+          :name="titleIcon"
+          class="size-5"
+        />
+      </div>
+      <h2 class="text-xl font-bold text-[#1E293B]">
         {{ title }}
       </h2>
       <slot name="title" />
     </div>
     <div
-      class="p-4 w-full flex items-center"
+      class="w-full flex items-center p-5"
       :class="props.innerClass"
     >
       <slot />

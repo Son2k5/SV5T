@@ -1,21 +1,21 @@
 <template>
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 justify-between">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <div
       v-for="(section, idx) in sections"
       :key="idx"
-      class="bg-white w-full rounded-lg shadow-xl flex items-center justify-center px-2 py-6 gap-4"
+      class="sv-card sv-card-hover group flex w-full items-center gap-4 p-5"
     >
-      <div class="rounded-lg bg-gray-200 size-10 min-w-10 flex items-center justify-center">
+      <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 text-[#3B82F6] transition duration-200 group-hover:scale-105">
         <UIcon
-          class="bg-info size-6"
+          class="size-6"
           :name="section.icon"
         />
       </div>
-      <div class="w-full">
-        <p class="text-sm text-dimmed">
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold uppercase tracking-wide text-[#64748B]">
           {{ section.label }}
         </p>
-        <h3 class="text-xl font-bold text-info">
+        <h3 class="mt-1 text-2xl font-bold text-[#2563EB]">
           {{ section.desc }}
         </h3>
       </div>

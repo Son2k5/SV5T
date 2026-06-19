@@ -1,100 +1,175 @@
 package com.example.SinhVien5T.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
+import com.example.SinhVien5T.user.entity.Role;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Configuration;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Configuration
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String AUTH_PATH_PREFIX = "/user/auth/";
+
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().startsWith(AUTH_PATH_PREFIX);
+    }
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
-        final Long id;
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")){
+        String authHeader = request.getHeader("Authorization");
+
+        if (!StringUtils.hasText(authHeader)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        try{
-            jwt = authHeader.substring(7);
+        if (!authHeader.startsWith(BEARER_PREFIX)) {
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid authorization header");
+            return;
+        }
 
-            Claims claims = jwtService.extraAllClaims(jwt);
-            userEmail = claims.getSubject();
-            id = claims.get("userId", Long.class);
+        try {
+            String jwt = authHeader.substring(BEARER_PREFIX.length()).trim();
+            Claims claims = jwtService.extractAllClaims(jwt);
 
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
+            if (!jwtService.isAccessToken(claims)) {
+                throw new JwtException("Only access tokens are accepted");
+            }
 
-                String role = claims.get("role", String.class);
+            Long userId = extractRequiredLongClaim(claims, JwtService.CLAIM_USER_ID);
+            String publicId = extractRequiredSubject(claims);
+            String email = extractRequiredStringClaim(claims, JwtService.CLAIM_EMAIL);
+            Role role = extractRequiredRole(claims);
 
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("role:" + role);
-
-                /*
-                Dựng đối tượng User nhanh
-
-                Giải thích: Vì ta chỉ cần các thông tin về username (email), role để dựng UsernamePasswordAuthenticationToken
-                mà các ttin này đã có luôn tỏng jwt.
-
-                => Chỉ cần extract các ttin này từ jwt mà ko cần query xuống db để lấy UserDetails mỗi lần reqest
-                 */
-                UserDetails userDetails = new CustomUserDetails( // class User ở đây là của 'org.springframework.security.core.userdetails.User' chứ kph entity User của mình
-                        id,
-                        userEmail,
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                CustomUserDetails userDetails = new CustomUserDetails(
+                        userId,
+                        publicId,
+                        email,
                         "",
-                        Collections.singletonList(authority)
+                        role,
+                        true
                 );
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                );
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-                /*
-                Method buildDetails extract thông tin từ request:
-                - Remote address: Địa chỉ IP của client.
-                - Session ID: ID của session HTTP nếu tồn tại (giúp track session).
-
-                Rồi gắn ttin này vào authToken
-                */
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // Set authentication mới vào contextholder
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-
+            }
+        } catch (ExpiredJwtException e) {
+            SecurityContextHolder.clearContext();
+            log.warn("JWT expired: {}", e.getMessage());
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+            return;
+        } catch (JwtException | IllegalArgumentException e) {
+            SecurityContextHolder.clearContext();
+            log.warn("JWT rejected: {}", e.getMessage());
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+            return;
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}" + e.getMessage());
+            SecurityContextHolder.clearContext();
+            log.error("Authentication failed", e);
+            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication failed");
+            return;
         }
 
         filterChain.doFilter(request, response);
     }
+
+    private Long extractRequiredLongClaim(Claims claims, String claimName) {
+        Object value = claims.get(claimName);
+
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (value instanceof String text && StringUtils.hasText(text)) {
+            try {
+                return Long.valueOf(text);
+            } catch (NumberFormatException e) {
+                throw new JwtException("Invalid " + claimName + " claim");
+            }
+        }
+
+        throw new JwtException("Missing " + claimName + " claim");
+    }
+
+    private String extractRequiredStringClaim(Claims claims, String claimName) {
+        String value = claims.get(claimName, String.class);
+
+        if (!StringUtils.hasText(value)) {
+            throw new JwtException("Missing " + claimName + " claim");
+        }
+
+        return value;
+    }
+
+    private String extractRequiredSubject(Claims claims) {
+        String subject = claims.getSubject();
+
+        if (!StringUtils.hasText(subject)) {
+            throw new JwtException("Missing subject claim");
+        }
+
+        return subject;
+    }
+
+    private Role extractRequiredRole(Claims claims) {
+        String role = extractRequiredStringClaim(claims, JwtService.CLAIM_ROLE);
+        String normalizedRole = role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role;
+
+        try {
+            return Role.valueOf(normalizedRole);
+        } catch (IllegalArgumentException e) {
+            throw new JwtException("Invalid role claim");
+        }
+    }
+
+    private void sendErrorResponse(HttpServletResponse response,
+                                   int status,
+                                   String message) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        objectMapper.writeValue(
+                response.getWriter(),
+                Map.of("success", false, "message", message)
+        );
+    }
 }
-
-

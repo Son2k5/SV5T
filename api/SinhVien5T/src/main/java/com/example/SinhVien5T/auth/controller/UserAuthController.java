@@ -66,8 +66,8 @@ public class UserAuthController {
     }
 
     @PostMapping("/refresh_access_token")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshAccessToken(HttpServletRequest request){
-        Map<String, Object> body = authService.refreshAccessToken(request);
+    public ResponseEntity<ApiResponse<Map<String, Object>>> refreshAccessToken(HttpServletRequest request, HttpServletResponse response){
+        Map<String, Object> body = authService.refreshAccessToken(request, response);
 
         ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("Refresh access token thành công", body);
 

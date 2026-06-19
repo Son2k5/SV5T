@@ -27,6 +27,10 @@ public class RegisterVerifyToken {
     @Column(name = "expiry_date")
     LocalDateTime expiryDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private TokenPurpose purpose;
+
 }
 
 

@@ -1,17 +1,20 @@
 package com.example.SinhVien5T.campaign.controller;
 
+import com.example.SinhVien5T.campaign.dto.CampaignSummaryResponse;
+import com.example.SinhVien5T.campaign.dto.ApplicationRecordResponse;
+import com.example.SinhVien5T.campaign.dto.SaveEvidenceRequest;
 import com.example.SinhVien5T.campaign.dto.StandardDTO;
+import com.example.SinhVien5T.campaign.entity.Level;
+import com.example.SinhVien5T.campaign.service.ApplicationRecordService;
 import com.example.SinhVien5T.campaign.service.CampaignService;
 import com.example.SinhVien5T.common.dto.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.repository.query.Param;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,15 +24,88 @@ import java.util.List;
 public class CampaignController {
 
     private final CampaignService campaignService;
+    private final ApplicationRecordService applicationRecordService;
 
-    @GetMapping("/get_campaign/{id}")
-    public ResponseEntity<ApiResponse<List<StandardDTO>>> getCampaign (@PathVariable("id") Long campaignId){
+    @GetMapping("/current")
+    public ResponseEntity<ApiResponse<CampaignSummaryResponse>> getCurrentCampaign(
+            @RequestParam(defaultValue = "UNIVERSITY") Level level
+    ) {
+        CampaignSummaryResponse response = campaignService.getCurrentCampaign(level);
 
-        List<StandardDTO> data = campaignService.getResultTree(campaignId);
+        return ResponseEntity.ok(
+                ApiResponse.success("Lấy đợt xét chọn đang mở thành công", response)
+        );
+    }
 
-        ApiResponse<List<StandardDTO>> response = ApiResponse.success("Lấy dữ liệu thành công", data);
+    @GetMapping("/campaigns/{campaignPublicId}/me")
+    public ResponseEntity<ApiResponse<ApplicationRecordResponse>> getMyApplication(
+            @PathVariable String campaignPublicId,
+            Authentication authentication
+    ) {
+        ApplicationRecordResponse response =
+                applicationRecordService.getMine(campaignPublicId, authentication);
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.ok(
+                ApiResponse.success("Lấy hồ sơ thành công", response)
+        );
+    }
 
+    @PostMapping(value = "/campaigns/{campaignPublicId}/evidences", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Void>> saveEvidence(
+            @PathVariable String campaignPublicId,
+            @Valid @RequestBody SaveEvidenceRequest request,
+            Authentication authentication
+    ) {
+        applicationRecordService.saveEvidence(campaignPublicId, request, authentication);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Lưu minh chứng thành công", null)
+        );
+    }
+
+    @PostMapping(value = "/campaigns/{campaignPublicId}/evidences", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Void>> saveEvidenceFile(
+            @PathVariable String campaignPublicId,
+            @RequestParam Long criteriaId,
+            @RequestPart("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        applicationRecordService.saveEvidenceFile(campaignPublicId, criteriaId, file, authentication);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Lưu minh chứng thành công", null)
+        );
+    }
+
+    @PatchMapping("/campaigns/{campaignPublicId}/submit")
+    public ResponseEntity<ApiResponse<ApplicationRecordResponse>> submit(
+            @PathVariable String campaignPublicId,
+            Authentication authentication
+    ) {
+        ApplicationRecordResponse response =
+                applicationRecordService.submit(campaignPublicId, authentication);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Nộp hồ sơ thành công", response)
+        );
+    }
+    @GetMapping("/{campaignPublicId}/criteria-tree")
+    public ResponseEntity<ApiResponse<List<StandardDTO>>> getCriteriaTree(
+            @PathVariable String campaignPublicId,
+            Authentication authentication
+    ) {
+
+        List<StandardDTO> result =
+                campaignService.getCriteriaTreeByCampaignPublicId(
+                        campaignPublicId,
+                        authentication
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Lấy dữ liệu thành công",
+                        result
+                )
+        );
     }
 }

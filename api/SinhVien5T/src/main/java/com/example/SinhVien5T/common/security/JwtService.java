@@ -2,13 +2,12 @@ package com.example.SinhVien5T.common.security;
 
 import com.example.SinhVien5T.user.entity.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -16,8 +15,15 @@ import java.util.Date;
 import java.util.UUID;
 
 @Service
-@Data
 public class JwtService {
+
+    public static final String CLAIM_USER_ID = "userId";
+    public static final String CLAIM_PUBLIC_ID = "publicId";
+    public static final String CLAIM_EMAIL = "email";
+    public static final String CLAIM_ROLE = "role";
+    public static final String CLAIM_TOKEN_TYPE = "tokenType";
+    public static final String TOKEN_TYPE_ACCESS = "access";
+    public static final String TOKEN_TYPE_REFRESH = "refresh";
 
     private final SecretKey jwtSecretKey;
     private final long accessExpiration;
@@ -36,7 +42,7 @@ public class JwtService {
         this.refreshExpiration = refreshExpiration;
     }
 
-    public Claims extraAllClaims(String token){
+    public Claims extractAllClaims(String token){
 
         return Jwts.parser()
                 .verifyWith(jwtSecretKey)
@@ -46,42 +52,51 @@ public class JwtService {
                 .getPayload();
     }
 
-    public String extractSubject(String token){
-        return extraAllClaims(token).getSubject();
+    public boolean isAccessToken(Claims claims) {
+        return TOKEN_TYPE_ACCESS.equals(claims.get(CLAIM_TOKEN_TYPE, String.class));
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractSubject(token);
+    public boolean isRefreshToken(Claims claims) {
+        return TOKEN_TYPE_REFRESH.equals(claims.get(CLAIM_TOKEN_TYPE, String.class));
+    }
 
-        // So sánh email trong token với email trong database VÀ kiểm tra token chưa hết hạn
-        return (username.equals(userDetails.getUsername()));
+    public Claims validateRefreshToken(String token) {
+        Claims claims = extractAllClaims(token);
+
+        if (!isRefreshToken(claims)) {
+            throw new JwtException("Invalid token type");
+        }
+
+        return claims;
     }
 
     public String generateAccessJwt(User user){
 
         return Jwts.builder()
-                .subject(user.getEmail())
+                .subject(user.getPublicId())
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessExpiration))
-                .claim("role", user.getRole().toString())
-                .claim("userId", user.getId())
+                .claim(CLAIM_USER_ID, user.getId())
+                .claim(CLAIM_PUBLIC_ID, user.getPublicId())
+                .claim(CLAIM_EMAIL, user.getEmail())
+                .claim(CLAIM_ROLE, user.getRole().name())
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
                 .signWith(jwtSecretKey)
                 .compact();
     }
 
     public String generateRefreshJwt(User user, HttpServletRequest request){
 
-        String userAgent = request.getHeader("User-Agent");
-        String ipAddress = getIpAddress(request);
-
         String refreshToken =  Jwts.builder()
-                .subject(user.getEmail())
+                .subject(user.getPublicId())
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
-                .claim("role", user.getRole().toString())
-                .claim("ip", ipAddress)
+                .claim(CLAIM_USER_ID, user.getId())
+                .claim(CLAIM_PUBLIC_ID, user.getPublicId())
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
+                .signWith(jwtSecretKey)
                 .compact();
 
         return refreshToken;
@@ -92,7 +107,11 @@ public class JwtService {
 
         String remoteAddress = request.getHeader("X-Forwarded-For");
 
-        return (remoteAddress != null && !remoteAddress.isEmpty()) ? remoteAddress : request.getRemoteAddr();
+        if (remoteAddress != null && !remoteAddress.isBlank()) {
+            return remoteAddress.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }
 

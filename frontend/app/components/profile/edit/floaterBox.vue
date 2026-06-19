@@ -1,39 +1,27 @@
 <template>
   <div>
-    <CommonPageSection inner-class="flex-col gap-4 w-full">
+    <CommonPageSection inner-class="flex-col gap-5 w-full text-center">
       <div class="relative">
-        <NuxtImg
-          :src="profile?.avatar ?? 'profilePlaceholder.png'"
-          class="size-40 rounded-full object-cover shadow-xl border-white border-4"
-          format="webp"
-          quality="70"
+        <ProfileAvatarUploader
+          size-class="size-36"
+          image-class="rounded-full border-4 border-white object-cover shadow-[0_18px_45px_rgba(15,23,42,0.16)]"
+          button-class="absolute bottom-2 right-2 z-3 flex size-9 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-[#3B82F6] text-white shadow-lg transition hover:bg-[#2563EB] disabled:cursor-wait disabled:opacity-80"
+          show-hover-label
         />
-        <button
-          class="absolute size-8 bottom-2 right-2 bg-info rounded-full p-2 z-3 cursor-pointer peer"
-        >
-          <UIcon
-            name="i-heroicons-photo-solid"
-            class="bg-white size-full"
-          />
-        </button>
-        <button
-          class="size-40 p-0 m-0 absolute inset-0 bg-black/60 rounded-full z-2 border-white border-4 text-white font-bold text-center opacity-0 peer-hover:opacity-100 hover:opacity-100 transition-opacity cursor-pointer"
-        >
-          Thay Ảnh
-        </button>
       </div>
       <div class="flex flex-col items-center">
-        <h3 class="text-2xl font-bold text-center lg:text-start">
-          {{ profile?.lastName ?? '...' }} {{ profile?.firstName ?? '' }}
+        <h3 class="text-2xl font-bold text-[#1E293B]">
+          {{ profile?.fullName ?? '...' }}
         </h3>
-        <p class="text-dimmed">
+        <p class="mt-1 text-sm text-[#64748B]">
           MSV: {{ profile?.studentCode ?? '...' }}
         </p>
         <UBadge
           v-if="profile?.currentPosition"
           :label="profile?.currentPosition"
           color="neutral"
-          class="w-max mt-2"
+          variant="subtle"
+          class="mt-3 w-max rounded-full px-3 py-1"
         />
       </div>
     </CommonPageSection>

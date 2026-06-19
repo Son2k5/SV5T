@@ -1,17 +1,17 @@
 <template>
   <UForm
-    class="flex flex-col gap-6 w-full px-6 xl:px-16 pt-10"
+    class="flex w-full flex-col gap-5"
     :state="registerPayloadState"
     :schema="schema"
     @submit="handleRegister"
   >
-    <p class="text-4xl text-info-500 font-bold text-center">
+    <p class="text-center text-3xl font-bold text-[#1E293B]">
       Đăng Ký
     </p>
     <UFormField
       label="Email"
       name="email"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <CommonPopper>
         <UInput
@@ -19,7 +19,7 @@
           class="w-full"
           color="neutral"
           placeholder="Nhập email..."
-          :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+          :ui="{ base: 'h-11' }"
           autocomplete="email"
         />
         <template #content>
@@ -31,7 +31,7 @@
       class="group"
       label="Mật Khẩu"
       name="userPassword"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <CommonPopper>
         <UInput
@@ -39,7 +39,7 @@
           class="w-full"
           color="neutral"
           placeholder="Nhập mật khẩu..."
-          :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+          :ui="{ base: 'h-11' }"
           :type="passwordShow ? 'text' : 'password'"
         >
           <template #trailing>
@@ -74,14 +74,14 @@
     <UFormField
       label="Xác Nhận Mật Khẩu"
       name="confirmPassword"
-      :ui="{ label: 'text-lg' }"
+      :ui="{ label: 'text-sm font-semibold text-[#334155]' }"
     >
       <UInput
         v-model="registerPayloadState.confirmPassword"
         class="w-full"
         color="neutral"
         placeholder="Xác nhận mật khẩu..."
-        :ui="{ base: 'bg-gray-100 h-10 text-black' }"
+        :ui="{ base: 'h-11' }"
         :type="confirmPasswordShow ? 'text' : 'password'"
       >
         <template #trailing>
@@ -100,18 +100,18 @@
       </UInput>
     </UFormField>
     <UButton
-      class="h-10 cursor-pointer"
+      class="h-11 cursor-pointer shadow-sm"
       color="info"
       label="Đăng Ký"
       :ui="{ label: ['mx-auto text-lg', isLoading && 'hidden'], leadingIcon: 'mx-auto' }"
       :loading="isLoading"
       type="submit"
     />
-    <p class="text-sm mx-auto">
+    <p class="mx-auto text-sm text-[#64748B]">
       Đã có tài khoản?
       <NuxtLink
         to="/login"
-        class="text-info-500 hover:text-muted"
+        class="font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
       >Đăng Nhập</NuxtLink>
     </p>
   </UForm>

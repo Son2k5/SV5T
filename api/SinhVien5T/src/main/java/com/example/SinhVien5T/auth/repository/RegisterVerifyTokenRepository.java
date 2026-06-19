@@ -2,15 +2,20 @@ package com.example.SinhVien5T.auth.repository;
 
 import com.example.SinhVien5T.user.entity.User;
 import com.example.SinhVien5T.auth.entity.RegisterVerifyToken;
+import com.example.SinhVien5T.auth.entity.TokenPurpose;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
 public interface RegisterVerifyTokenRepository extends JpaRepository<RegisterVerifyToken, String> {
 
-    public Optional<RegisterVerifyToken> findByToken(String token);
+    Optional<RegisterVerifyToken> findByToken(String token);
 
-    public void deleteByUser(User user);
+    Optional<RegisterVerifyToken> findByTokenAndPurpose(String token, TokenPurpose purpose);
+
+    void deleteByUser(User user);
+
+    void deleteByUserAndPurpose(User user, TokenPurpose purpose);
 }
 
 
