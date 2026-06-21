@@ -1,5 +1,8 @@
 package com.example.SinhVien5T.common.security;
 
+import com.example.SinhVien5T.auth.exception.AuthErrorMessages;
+import com.example.SinhVien5T.auth.service.RedisTokenService;
+import com.example.SinhVien5T.auth.service.TokenStateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import com.example.SinhVien5T.user.entity.Role;
@@ -20,6 +23,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 
 @Slf4j
@@ -28,14 +32,18 @@ import java.util.Map;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String AUTH_PATH_PREFIX = "/user/auth/";
+    private static final String AUTH_PATH_PREFIX = "/user/auth";
 
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final RedisTokenService redisTokenService;
+    private final TokenStateService tokenStateService;
+    private final CachedUserPrincipalService cachedUserPrincipalService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getServletPath().startsWith(AUTH_PATH_PREFIX);
+        String servletPath = request.getServletPath();
+        return servletPath.equals(AUTH_PATH_PREFIX) || servletPath.startsWith(AUTH_PATH_PREFIX + "/");
     }
 
     @Override
@@ -52,32 +60,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (!authHeader.startsWith(BEARER_PREFIX)) {
-            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid authorization header");
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, AuthErrorMessages.INVALID_SESSION);
             return;
         }
 
         try {
             String jwt = authHeader.substring(BEARER_PREFIX.length()).trim();
-            Claims claims = jwtService.extractAllClaims(jwt);
+            Claims claims = jwtService.validateAccessToken(jwt);
 
-            if (!jwtService.isAccessToken(claims)) {
-                throw new JwtException("Only access tokens are accepted");
+            if (redisTokenService.isAccessTokenBlacklisted(claims.getId())) {
+                throw new JwtException("Access token revoked");
             }
 
             Long userId = extractRequiredLongClaim(claims, JwtService.CLAIM_USER_ID);
             String publicId = extractRequiredSubject(claims);
             String email = extractRequiredStringClaim(claims, JwtService.CLAIM_EMAIL);
             Role role = extractRequiredRole(claims);
+            Long tokenVersion = jwtService.extractTokenVersion(claims);
+            Instant issuedAt = claims.getIssuedAt() == null ? null : claims.getIssuedAt().toInstant();
+
+            if (tokenStateService.isAccessTokenRevoked(userId, tokenVersion, issuedAt)) {
+                throw new JwtException("Access token version revoked");
+            }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                CustomUserDetails userDetails = new CustomUserDetails(
-                        userId,
-                        publicId,
-                        email,
-                        "",
-                        role,
-                        true
-                );
+                CustomUserDetails userDetails = loadActiveUserDetails(userId, publicId, email, role);
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -92,12 +99,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             SecurityContextHolder.clearContext();
             log.warn("JWT expired: {}", e.getMessage());
-            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, AuthErrorMessages.SESSION_EXPIRED);
             return;
         } catch (JwtException | IllegalArgumentException e) {
             SecurityContextHolder.clearContext();
             log.warn("JWT rejected: {}", e.getMessage());
-            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+            String message = AuthErrorMessages.ACCOUNT_DISABLED.equals(e.getMessage())
+                    ? AuthErrorMessages.ACCOUNT_DISABLED
+                    : AuthErrorMessages.INVALID_SESSION;
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, message);
             return;
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
@@ -107,6 +117,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private CustomUserDetails loadActiveUserDetails(
+            Long userId,
+            String publicId,
+            String email,
+            Role role
+    ) {
+        CachedUserPrincipal principal = cachedUserPrincipalService.loadByUserId(userId);
+
+        if (!publicId.equals(principal.publicId())
+                || !email.equals(principal.email())
+                || role != principal.role()) {
+            throw new JwtException("Token claims do not match current user");
+        }
+
+        if (!principal.active()) {
+            throw new JwtException(AuthErrorMessages.ACCOUNT_DISABLED);
+        }
+
+        return principal.toUserDetails();
     }
 
     private Long extractRequiredLongClaim(Claims claims, String claimName) {

@@ -16,8 +16,10 @@ import java.util.UUID;
         name = "campaign",
         indexes = {
                 @Index(name = "idx_campaign_public_id", columnList = "public_id"),
-                @Index(name = "idx_campaign_status", columnList = "status"),
-                @Index(name = "idx_campaign_level", columnList = "level")
+                @Index(name = "idx_campaign_status", columnList = "campaign_status"),
+                @Index(name = "idx_campaign_level", columnList = "level"),
+                @Index(name = "idx_campaign_academic_year", columnList = "academic_year"),
+                @Index(name = "idx_campaign_status_level_year", columnList = "campaign_status, level, academic_year")
         }
 )
 @NoArgsConstructor
@@ -45,14 +47,17 @@ public class Campaign {
     @Enumerated(EnumType.STRING)
     private Level level;
 
+    @Builder.Default
+    @Column(name = "campaign_status", nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
+    private CampaignStatus campaignStatus = CampaignStatus.DRAFT;
+
     @Column(name = "start_date")
     private LocalDate startDate;
 
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(length = 50)
-    private String status;
 
     @CreationTimestamp
     @Column(name = "create_at", updatable = false)

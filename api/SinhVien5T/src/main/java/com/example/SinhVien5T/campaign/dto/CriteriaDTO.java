@@ -32,7 +32,7 @@ public class CriteriaDTO {
 
     // Ttin evidence (lấy từ bảng Evidence)
     private String evidenceUrl;
-    private Boolean evidenceStatus;
+    private String evidenceStatus;
     private String reviewerComment;
 
     private List<CriteriaDTO> subCriteriaList;

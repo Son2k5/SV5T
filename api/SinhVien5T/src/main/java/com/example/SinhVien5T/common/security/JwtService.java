@@ -22,6 +22,7 @@ public class JwtService {
     public static final String CLAIM_EMAIL = "email";
     public static final String CLAIM_ROLE = "role";
     public static final String CLAIM_TOKEN_TYPE = "tokenType";
+    public static final String CLAIM_TOKEN_VERSION = "tokenVersion";
     public static final String TOKEN_TYPE_ACCESS = "access";
     public static final String TOKEN_TYPE_REFRESH = "refresh";
 
@@ -70,7 +71,43 @@ public class JwtService {
         return claims;
     }
 
-    public String generateAccessJwt(User user){
+    public Claims validateAccessToken(String token) {
+        Claims claims = extractAllClaims(token);
+
+        if (!isAccessToken(claims)) {
+            throw new JwtException("Invalid token type");
+        }
+
+        return claims;
+    }
+
+    public Long extractTokenVersion(Claims claims) {
+        Object value = claims.get(CLAIM_TOKEN_VERSION);
+
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Long.valueOf(text);
+            } catch (NumberFormatException e) {
+                throw new JwtException("Invalid tokenVersion claim");
+            }
+        }
+
+        throw new JwtException("Invalid tokenVersion claim");
+    }
+
+    public String generateAccessJwt(User user) {
+        return generateAccessJwt(user, 0L);
+    }
+
+    public String generateAccessJwt(User user, long tokenVersion){
 
         return Jwts.builder()
                 .subject(user.getPublicId())
@@ -82,11 +119,16 @@ public class JwtService {
                 .claim(CLAIM_EMAIL, user.getEmail())
                 .claim(CLAIM_ROLE, user.getRole().name())
                 .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
+                .claim(CLAIM_TOKEN_VERSION, tokenVersion)
                 .signWith(jwtSecretKey)
                 .compact();
     }
 
-    public String generateRefreshJwt(User user, HttpServletRequest request){
+    public String generateRefreshJwt(User user, HttpServletRequest request) {
+        return generateRefreshJwt(user, request, 0L);
+    }
+
+    public String generateRefreshJwt(User user, HttpServletRequest request, long tokenVersion){
 
         String refreshToken =  Jwts.builder()
                 .subject(user.getPublicId())
@@ -96,6 +138,7 @@ public class JwtService {
                 .claim(CLAIM_USER_ID, user.getId())
                 .claim(CLAIM_PUBLIC_ID, user.getPublicId())
                 .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
+                .claim(CLAIM_TOKEN_VERSION, tokenVersion)
                 .signWith(jwtSecretKey)
                 .compact();
 

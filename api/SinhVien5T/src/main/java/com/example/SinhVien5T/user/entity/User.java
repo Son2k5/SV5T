@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -28,7 +29,16 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_role", columnList = "role"),
+                @Index(name = "idx_users_active", columnList = "is_active"),
+                @Index(name = "idx_users_verified", columnList = "is_verified"),
+                @Index(name = "idx_users_created_at", columnList = "created_at"),
+                @Index(name = "idx_users_role_active", columnList = "role, is_active")
+        }
+)
 @Getter
 @Setter
 @Builder

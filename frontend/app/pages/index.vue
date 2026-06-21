@@ -6,8 +6,14 @@
 definePageMeta({
   layout: false,
   middleware: async () => {
-    const { accessToken, refreshAccessToken } = useAuth()
-    if (accessToken.value || await refreshAccessToken()) return navigateTo('/dashboard')
+    const { ensureAccessToken, hasIdleExpired, logOut } = useAuth()
+
+    if (import.meta.client && hasIdleExpired()) {
+      await logOut({ redirect: false, reason: 'idle' })
+      return navigateTo('/login?error=session_idle')
+    }
+
+    if (await ensureAccessToken()) return navigateTo('/dashboard')
     return navigateTo('/login')
   },
 })

@@ -53,7 +53,7 @@
             <UButton
               :label="formatDate(formState.birthDay) || 'Chọn ngày sinh'"
               color="neutral"
-              class="bg-white hover:bg-neutral-100 text-black ring ring-inset ring-accented justify-between w-full"
+              class="w-full justify-between bg-white text-[#1E293B] ring ring-inset ring-accented hover:bg-neutral-100 disabled:cursor-default disabled:bg-white disabled:text-[#64748B] disabled:opacity-100 disabled:hover:bg-white"
               trailing-icon="i-heroicons-calendar-solid"
             />
             <template #content>

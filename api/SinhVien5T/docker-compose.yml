@@ -1,0 +1,70 @@
+name: sv5t-infra
+
+services:
+  redis-cache:
+    image: redis:7.4-alpine
+    container_name: sv5t-redis-cache
+    command:
+      ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_cache_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sv5t
+
+  redis-token:
+    image: redis:7.4-alpine
+    container_name: sv5t-redis-token
+    command:
+      ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_token_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sv5t
+
+  redis-exporter-cache:
+    image: oliver006/redis_exporter:v1.72.0
+    container_name: sv5t-redis-exporter-cache
+    environment:
+      REDIS_ADDR: redis://redis-cache:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - sv5t
+
+  redis-exporter-token:
+    image: oliver006/redis_exporter:v1.72.0
+    container_name: sv5t-redis-exporter-token
+    environment:
+      REDIS_ADDR: redis://redis-token:6379
+    ports:
+      - "9122:9121"
+    depends_on:
+      redis-token:
+        condition: service_healthy
+    networks:
+      - sv5t
+
+volumes:
+  redis_cache_data:
+  redis_token_data:
+
+networks:
+  sv5t:
+    driver: bridge

@@ -14,7 +14,15 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "register_verify_token")
+@Table(
+        name = "register_verify_token",
+        indexes = {
+                @Index(name = "idx_register_verify_token_user_id", columnList = "user_id"),
+                @Index(name = "idx_register_verify_token_expiry_date", columnList = "expiry_date"),
+                @Index(name = "idx_register_verify_token_purpose", columnList = "purpose"),
+                @Index(name = "idx_register_verify_token_user_purpose", columnList = "user_id, purpose")
+        }
+)
 public class RegisterVerifyToken {
 
     @Id

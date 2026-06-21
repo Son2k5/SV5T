@@ -7,18 +7,12 @@ export const useCurrentUser = async () => {
   const isLoading = ref(false)
   const avatarLoading = ref(false)
   const toast = useToast()
-  const { accessToken } = useAuth()
-
-  const getAuthHeaders = () =>
-    accessToken.value
-      ? { Authorization: `Bearer ${accessToken.value}` }
-      : undefined
+  const { authFetch } = useAuth()
 
   const fetchCurrentUser = async () => {
     try {
-      const { data } = await $fetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
+      const { data } = await authFetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
         method: 'GET',
-        headers: getAuthHeaders(),
       })
 
       return data
@@ -38,9 +32,8 @@ export const useCurrentUser = async () => {
     isLoading.value = true
 
     try {
-      const { data, message } = await $fetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
+      const { data, message } = await authFetch<ApiResponse<ProfileData>>(CurrentUserEndpoint(), {
         method: 'PUT',
-        headers: getAuthHeaders(),
         body: payload,
       })
 
@@ -73,9 +66,8 @@ export const useCurrentUser = async () => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const { data, message } = await $fetch<ApiResponse<ProfileData>>(CurrentUserAvatarEndpoint(), {
+      const { data, message } = await authFetch<ApiResponse<ProfileData>>(CurrentUserAvatarEndpoint(), {
         method: 'PUT',
-        headers: getAuthHeaders(),
         body: formData,
       })
 

@@ -21,7 +21,11 @@ import java.util.UUID;
                 @Index(name = "idx_application_record_user_id", columnList = "user_id"),
                 @Index(name = "idx_application_record_campaign_id", columnList = "campaign_id"),
                 @Index(name = "idx_application_record_status", columnList = "status"),
-                @Index(name = "idx_application_record_user_campaign", columnList = "user_id,campaign_id")
+                @Index(name = "idx_application_record_user_campaign", columnList = "user_id,campaign_id"),
+                @Index(name = "idx_application_record_campaign_status", columnList = "campaign_id,status"),
+                @Index(name = "idx_application_record_user_status", columnList = "user_id,status"),
+                @Index(name = "idx_application_record_campaign_status_created_at", columnList = "campaign_id,status,created_at"),
+                @Index(name = "idx_application_record_created_at", columnList = "created_at")
         },
         uniqueConstraints = {
                 @UniqueConstraint(

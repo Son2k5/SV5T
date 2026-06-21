@@ -1,11 +1,13 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { accessToken, refreshAccessToken } = useAuth()
+  const { ensureAccessToken, hasIdleExpired, logOut } = useAuth()
 
   if (to.path.startsWith('/dashboard')) {
-    if (!accessToken.value) {
-      const newToken = await refreshAccessToken()
-      if (!newToken) return navigateTo('/login?error=unauthorized')
-      return
+    if (import.meta.client && hasIdleExpired()) {
+      await logOut({ redirect: false, reason: 'idle' })
+      return navigateTo('/login?error=session_idle')
     }
+
+    const hasToken = await ensureAccessToken()
+    if (!hasToken) return navigateTo('/login?error=session_expired')
   }
 })

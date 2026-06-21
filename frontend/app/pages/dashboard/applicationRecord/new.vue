@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CampaignLevel, CampaignSummaryResponse } from '~/types/applicationRecord'
+import { getErrorMessage, getErrorStatus } from '~/utils/errors'
 
 type EvidenceMode = 'individual' | 'group'
 
@@ -62,8 +63,8 @@ async function loadCurrentCampaign() {
     const res = await getCurrentCampaign(selectedLevel.value)
     currentCampaign.value = res.data
   }
-  catch (e: any) {
-    error.value = e?.data?.message || 'Chưa có đợt xét chọn đang mở cho cấp này.'
+  catch (errorResponse) {
+    error.value = getErrorMessage(errorResponse, 'Chưa có đợt xét chọn đang mở cho cấp này.')
   }
   finally {
     loadingCampaign.value = false
@@ -99,9 +100,9 @@ async function openEvidenceWorkspace() {
       },
     })
   }
-  catch (e: any) {
-    const status = e?.status || e?.response?.status || e?.data?.status
-    const message = e?.data?.message || ''
+  catch (errorResponse) {
+    const status = getErrorStatus(errorResponse)
+    const message = getErrorMessage(errorResponse, '')
 
     if (status === 409 || message.includes('đã đăng ký') || message.includes('Ä‘Ã£ Ä‘Äƒng kÃ½')) {
       const res = await getMyApplicationRecord(campaignPublicId)

@@ -11,10 +11,15 @@ import com.example.SinhVien5T.campaign.entity.Evidence;
 import com.example.SinhVien5T.campaign.entity.Level;
 import com.example.SinhVien5T.campaign.entity.Standard;
 import com.example.SinhVien5T.campaign.repository.CampaignRepository;
+import com.example.SinhVien5T.campaign.repository.CriteriaRepository;
 import com.example.SinhVien5T.campaign.repository.EvidenceRepository;
+import com.example.SinhVien5T.campaign.repository.StandardRepository;
 import com.example.SinhVien5T.common.exception.ResourceNotFoundException;
+import com.example.SinhVien5T.common.config.CacheConfig;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,11 +34,18 @@ public class CampaignService {
 
         private final CampaignRepository campaignRepository;
         private final ApplicationRecordRepository applicationRecordRepository;
+        private final CriteriaRepository criteriaRepository;
         private final EvidenceRepository evidenceRepository;
+        private final StandardRepository standardRepository;
 
+        @Cacheable(cacheNames = CacheConfig.CAMPAIGN_CURRENT, key = "#level.name()", sync = true)
         @Transactional(readOnly = true)
         public CampaignSummaryResponse getCurrentCampaign(Level level) {
-                Campaign campaign = campaignRepository.findOpenCampaignsByLevel(level, LocalDate.now())
+                Campaign campaign = campaignRepository.findOpenCampaignsByLevel(
+                                level,
+                                LocalDate.now(),
+                                PageRequest.of(0, 1)
+                        )
                         .stream()
                         .findFirst()
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn đang mở"));
@@ -41,6 +53,11 @@ public class CampaignService {
                 return toSummaryResponse(campaign);
         }
 
+        @Cacheable(
+                cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
+                key = "#campaignPublicId + ':' + #authentication.principal.id",
+                sync = true
+        )
         @Transactional(readOnly = true)
         public List<StandardDTO> getCriteriaTreeByCampaignPublicId(
                 String campaignPublicId,
@@ -72,7 +89,8 @@ public class CampaignService {
                         );
                 }
 
-                List<Criteria> criteriaList = campaignRepository.findAllCriteria(campaign.getId());
+                List<Criteria> criteriaList = criteriaRepository
+                        .findAllByCampaignIdWithStandardAndParent(campaign.getId());
 
                 Map<Long, CriteriaDTO> criteriaDTOMap = criteriaList.stream()
                         .collect(Collectors.toMap(
@@ -103,7 +121,7 @@ public class CampaignService {
 
                 List<StandardDTO> result = new ArrayList<>();
 
-                for (Standard standard : campaign.getStandards()) {
+                for (Standard standard : standardRepository.findByCampaignId(campaign.getId())) {
                         StandardDTO standardDTO = StandardDTO.builder()
                                 .id(standard.getId())
                                 .name(standard.getName())
@@ -147,7 +165,7 @@ public class CampaignService {
                         .evidenceStatus(
                                 evidence == null
                                         ? null
-                                        : evidence.getStatus()
+                                        : evidence.getEvidenceStatus().name()
                         )
                         .reviewerComment(
                                 evidence == null
@@ -164,7 +182,7 @@ public class CampaignService {
                         .name(campaign.getName())
                         .academicYear(campaign.getAcademicYear())
                         .level(campaign.getLevel().name())
-                        .status(campaign.getStatus())
+                        .status(campaign.getCampaignStatus().name())
                         .startDate(campaign.getStartDate())
                         .endDate(campaign.getEndDate())
                         .build();

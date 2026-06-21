@@ -13,7 +13,9 @@ import java.util.Set;
         name = "criteria",
         indexes = {
                 @Index(name = "idx_criteria_standard_id", columnList = "standard_id"),
-                @Index(name = "idx_criteria_parent_id", columnList = "parent_id")
+                @Index(name = "idx_criteria_parent_id", columnList = "parent_id"),
+                @Index(name = "idx_criteria_standard_parent", columnList = "standard_id,parent_id"),
+                @Index(name = "idx_criteria_evidence_type", columnList = "evidence_type")
         }
 )
 @Getter

@@ -10,8 +10,10 @@ import lombok.*;
         indexes = {
                 @Index(name = "idx_evidence_application_record_id", columnList = "application_record_id"),
                 @Index(name = "idx_evidence_criteria_id", columnList = "criteria_id"),
-                @Index(name = "idx_evidence_status", columnList = "status"),
-                @Index(name = "idx_evidence_application_criteria", columnList = "application_record_id,criteria_id")
+                @Index(name = "idx_evidence_status", columnList = "evidence_status"),
+                @Index(name = "idx_evidence_application_criteria", columnList = "application_record_id,criteria_id"),
+                @Index(name = "idx_evidence_application_status", columnList = "application_record_id,evidence_status"),
+                @Index(name = "idx_evidence_criteria_status", columnList = "criteria_id,evidence_status")
         },
         uniqueConstraints = {
                 @UniqueConstraint(
@@ -55,8 +57,9 @@ public class Evidence {
     private String evidenceOriginalFilename;
 
     @Builder.Default
-    @Column(nullable = false)
-    private Boolean status = false;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "evidence_status", nullable = false, length = 30)
+    private EvidenceStatus evidenceStatus = EvidenceStatus.PENDING;
 
     @Column(name = "reviewer_comment", columnDefinition = "TEXT")
     private String reviewerComment;

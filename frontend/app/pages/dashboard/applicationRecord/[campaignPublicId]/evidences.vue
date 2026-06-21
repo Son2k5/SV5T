@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ApplicationRecordResponse, CampaignLevel, StandardDTO } from '~/types/applicationRecord'
+import { getErrorMessage } from '~/utils/errors'
 
 type EvidenceMode = 'individual' | 'group'
 
@@ -55,8 +56,8 @@ async function loadData() {
     applicationRecord.value = recordRes.data
     standards.value = criteriaRes.data || []
   }
-  catch (e: any) {
-    error.value = e?.data?.message || 'Không thể tải dữ liệu minh chứng.'
+  catch (errorResponse) {
+    error.value = getErrorMessage(errorResponse, 'Không thể tải dữ liệu minh chứng.')
   }
   finally {
     loading.value = false
@@ -78,8 +79,8 @@ async function handleSave(criteriaId: number, evidenceUrl: string) {
     message.value = 'Lưu minh chứng thành công.'
     await loadData()
   }
-  catch (e: any) {
-    error.value = e?.data?.message || 'Lưu minh chứng thất bại.'
+  catch (errorResponse) {
+    error.value = getErrorMessage(errorResponse, 'Lưu minh chứng thất bại.')
   }
   finally {
     savingId.value = null
@@ -98,8 +99,8 @@ async function handleSaveFile(criteriaId: number, file: File) {
     message.value = 'Upload minh chứng thành công.'
     await loadData()
   }
-  catch (e: any) {
-    error.value = e?.data?.message || 'Upload minh chứng thất bại.'
+  catch (errorResponse) {
+    error.value = getErrorMessage(errorResponse, 'Upload minh chứng thất bại.')
   }
   finally {
     savingId.value = null
@@ -117,8 +118,8 @@ async function handleSubmit() {
     applicationRecord.value = res.data
     message.value = 'Nộp hồ sơ minh chứng thành công.'
   }
-  catch (e: any) {
-    error.value = e?.data?.message || 'Nộp hồ sơ thất bại.'
+  catch (errorResponse) {
+    error.value = getErrorMessage(errorResponse, 'Nộp hồ sơ thất bại.')
   }
   finally {
     submitting.value = false

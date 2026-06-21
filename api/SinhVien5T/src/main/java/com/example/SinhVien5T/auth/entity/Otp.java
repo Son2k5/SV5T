@@ -3,6 +3,7 @@ package com.example.SinhVien5T.auth.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "password_login_reset_otps")
+@Table(
+        name = "password_login_reset_otps",
+        indexes = {
+                @Index(name = "idx_password_reset_otps_email", columnList = "email"),
+                @Index(name = "idx_password_reset_otps_expired_at", columnList = "expired_at"),
+                @Index(name = "idx_password_reset_otps_email_expired", columnList = "email, expired_at")
+        }
+)
 @Data
 @Builder
 @NoArgsConstructor

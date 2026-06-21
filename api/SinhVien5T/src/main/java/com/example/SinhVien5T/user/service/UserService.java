@@ -1,7 +1,9 @@
 package com.example.SinhVien5T.user.service;
 
 import com.example.SinhVien5T.common.service.CloudinaryStorageService;
+import com.example.SinhVien5T.common.service.AssetCleanupScheduler;
 import com.example.SinhVien5T.common.service.StoredAsset;
+import com.example.SinhVien5T.common.config.CacheConfig;
 import com.example.SinhVien5T.user.dto.UserProfileResponse;
 import com.example.SinhVien5T.user.dto.UserProfileUpdateRequest;
 import com.example.SinhVien5T.user.entity.AddressType;
@@ -18,10 +20,14 @@ import com.example.SinhVien5T.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.function.Function;
 
 import static com.example.SinhVien5T.user.util.UserAddressUtils.findAddress;
 
@@ -34,13 +40,16 @@ public class UserService {
     private final UserDetailRepository userDetailRepository;
     private final UserProfileMapper userProfileMapper;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final AssetCleanupScheduler assetCleanupScheduler;
 
+    @Cacheable(cacheNames = CacheConfig.USER_PROFILE, key = "#authentication.principal.id", sync = true)
     @Transactional(readOnly = true)
     public UserProfileResponse getCurrentUserProfile(Authentication authentication) {
         User user = findAuthenticatedUserWithProfile(authentication);
         return userProfileMapper.toResponse(user);
     }
 
+    @CachePut(cacheNames = CacheConfig.USER_PROFILE, key = "#authentication.principal.id")
     @Transactional
     public UserProfileResponse updateCurrentUserProfile(
             Authentication authentication,
@@ -61,35 +70,43 @@ public class UserService {
         return userProfileMapper.toResponse(savedUser);
     }
 
+    @CachePut(cacheNames = CacheConfig.USER_PROFILE, key = "#authentication.principal.id")
     @Transactional
     public UserProfileResponse updateCurrentUserAvatar(Authentication authentication, String avatar) {
-        User user = findAuthenticatedUserWithProfile(authentication);
-        log.info("Updating avatar for userId={}", user.getId());
-
-        String oldPublicId = user.getAvatarPublicId();
-        String oldResourceType = user.getAvatarResourceType();
-        StoredAsset avatarAsset = cloudinaryStorageService.uploadUserAvatar(avatar, user.getPublicId());
-        applyAvatar(user, avatarAsset);
-
-        User savedUser = userRepository.saveAndFlush(user);
-        cloudinaryStorageService.deleteAsset(oldPublicId, oldResourceType);
-        log.info("Updated avatar for userId={}", savedUser.getId());
-        return userProfileMapper.toResponse(savedUser);
+        return updateAvatarInternal(
+                authentication,
+                userPublicId -> cloudinaryStorageService.uploadUserAvatar(avatar, userPublicId),
+                "avatar"
+        );
     }
 
+    @CachePut(cacheNames = CacheConfig.USER_PROFILE, key = "#authentication.principal.id")
     @Transactional
     public UserProfileResponse updateCurrentUserAvatar(Authentication authentication, MultipartFile file) {
+        return updateAvatarInternal(
+                authentication,
+                userPublicId -> cloudinaryStorageService.uploadUserAvatar(file, userPublicId),
+                "avatar file"
+        );
+    }
+
+    private UserProfileResponse updateAvatarInternal(
+            Authentication authentication,
+            Function<String, StoredAsset> uploader,
+            String label
+    ) {
         User user = findAuthenticatedUserWithProfile(authentication);
-        log.info("Updating avatar file for userId={}", user.getId());
+        log.info("Updating {} for userId={}", label, user.getId());
 
         String oldPublicId = user.getAvatarPublicId();
         String oldResourceType = user.getAvatarResourceType();
-        StoredAsset avatarAsset = cloudinaryStorageService.uploadUserAvatar(file, user.getPublicId());
+        StoredAsset avatarAsset = uploader.apply(user.getPublicId());
+        assetCleanupScheduler.deleteAfterRollback(avatarAsset.publicId(), avatarAsset.resourceType());
         applyAvatar(user, avatarAsset);
 
         User savedUser = userRepository.saveAndFlush(user);
-        cloudinaryStorageService.deleteAsset(oldPublicId, oldResourceType);
-        log.info("Updated avatar file for userId={}", savedUser.getId());
+        assetCleanupScheduler.deleteAfterCommit(oldPublicId, oldResourceType);
+        log.info("Updated {} for userId={}", label, savedUser.getId());
         return userProfileMapper.toResponse(savedUser);
     }
 

@@ -31,7 +31,7 @@ public class UserAuthController {
 
         authService.register(request);
 
-        ApiResponse apiResponse = ApiResponse.success("Đăng kí thành công", null);
+        ApiResponse apiResponse = ApiResponse.success("Đăng ký thành công", null);
 
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -50,7 +50,7 @@ public class UserAuthController {
 
         Map<String, Object> data = authService.login(userLoginRequest, request, response);
 
-        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("Đăng nhập thaành công", data);
+        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("Đăng nhập thành công", data);
 
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -60,7 +60,7 @@ public class UserAuthController {
     public ResponseEntity<ApiResponse> logOut(HttpServletRequest request, HttpServletResponse response){
         authService.logOut(request, response);
 
-        ApiResponse apiResponse = ApiResponse.success("", null);
+        ApiResponse apiResponse = ApiResponse.success("Đăng xuất thành công", null);
 
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }

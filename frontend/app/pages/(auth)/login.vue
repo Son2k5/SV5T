@@ -128,8 +128,10 @@ const logInPayloadState = reactive<LogInPayload>({
 })
 
 const errorKeys: Record<string, { title: string, desc: string }> = {
-  unauthorized: { title: 'Chưa được xác minh!', desc: 'Vui lòng đăng nhập để truy cập' },
-  invalid_token: { title: 'Link không hợp lệ!', desc: 'Vui lòng đăng ký để làm mới' },
+  unauthorized: { title: 'Cần đăng nhập!', desc: 'Vui lòng đăng nhập để tiếp tục.' },
+  session_expired: { title: 'Phiên đăng nhập đã hết hạn!', desc: 'Vui lòng đăng nhập lại để tiếp tục.' },
+  session_idle: { title: 'Đã tự động đăng xuất!', desc: 'Tài khoản không hoạt động trong 3 giờ.' },
+  invalid_token: { title: 'Liên kết không hợp lệ!', desc: 'Vui lòng yêu cầu một liên kết mới.' },
 }
 
 onMounted(() => {

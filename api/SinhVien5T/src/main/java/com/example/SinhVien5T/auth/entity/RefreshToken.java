@@ -11,7 +11,14 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(
+        name = "refresh_tokens",
+        indexes = {
+                @Index(name = "idx_refresh_tokens_user_id", columnList = "user_id"),
+                @Index(name = "idx_refresh_tokens_expired_at", columnList = "expired_at"),
+                @Index(name = "idx_refresh_tokens_user_revoked", columnList = "user_id, is_revoked")
+        }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,6 +40,9 @@ public class RefreshToken {
     @Column(name = "is_revoked")
     @Builder.Default
     private Boolean isRevoked = false;
+
+    @Column(name = "last_used_at")
+    private LocalDateTime lastUsedAt;
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;

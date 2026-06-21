@@ -2,8 +2,10 @@ package com.example.SinhVien5T.auth.service;
 
 import com.example.SinhVien5T.auth.dto.request.UserLoginRequest;
 import com.example.SinhVien5T.auth.dto.request.UserRegisterRequest;
+import com.example.SinhVien5T.auth.exception.AuthErrorMessages;
 import com.example.SinhVien5T.auth.exception.InvalidEmailDomainException;
 import com.example.SinhVien5T.auth.exception.InvalidTokenException;
+import com.example.SinhVien5T.common.security.CachedUserPrincipalService;
 import com.example.SinhVien5T.notification.service.EmailService;
 import com.example.SinhVien5T.user.entity.User;
 import com.example.SinhVien5T.auth.entity.RefreshToken;
@@ -11,8 +13,8 @@ import com.example.SinhVien5T.auth.entity.RegisterVerifyToken;
 import com.example.SinhVien5T.auth.entity.TokenPurpose;
 import com.example.SinhVien5T.user.exception.EmailExistException;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
-import com.example.SinhVien5T.auth.repository.RefreshTokenRepository;
 import com.example.SinhVien5T.auth.repository.RegisterVerifyTokenRepository;
+import com.example.SinhVien5T.auth.repository.RefreshTokenRepository;
 import com.example.SinhVien5T.user.repository.UserRepository;
 import com.example.SinhVien5T.common.security.JwtService;
 import io.jsonwebtoken.Claims;
@@ -28,6 +30,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,9 +53,12 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final RegisterVerifyTokenRepository registerVerifyTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTokenService redisTokenService;
+    private final TokenStateService tokenStateService;
+    private final CachedUserPrincipalService cachedUserPrincipalService;
 
     @Value("${app.auth.frontendUrl}")
     private String frontEndUrl;
@@ -60,7 +66,7 @@ public class AuthService {
     @Value("${app.auth.backendUrl}")
     private String backEndUrl;
 
-    @Value("${app.security.cookie.secure:true}")
+    @Value("${app.security.cookie.secure:false}")
     private boolean cookieSecure;
 
     @Value("${app.security.cookie.same-site:Lax}")
@@ -69,6 +75,11 @@ public class AuthService {
     @Value("${app.jwt.refresh-expiration}")
     private long refreshExpirationMs;
 
+    @Value("${app.auth.idle-timeout-ms:10800000}")
+    private long idleTimeoutMs;
+
+    @Value("${app.redis.token.enabled:true}")
+    private boolean redisTokenEnabled;
 
     @Transactional
     public void register(UserRegisterRequest request) throws Exception {
@@ -76,12 +87,12 @@ public class AuthService {
         Optional<User> existUser = userRepository.findByEmail(request.getEmail());
 
         if (existUser.isPresent() && existUser.get().isVerified()) {
-            throw new EmailExistException("Email đã được đăng kí");
+            throw new EmailExistException(AuthErrorMessages.EMAIL_ALREADY_REGISTERED);
         }
 
 
         if(!request.getEmail().toLowerCase().endsWith("@ms.hanu.edu.vn")){
-            throw new InvalidEmailDomainException("Vui lòng sử dụng email nhà trường cấp (@ms.hanu.edu.vn)");
+            throw new InvalidEmailDomainException(AuthErrorMessages.INVALID_EMAIL_DOMAIN);
         }
 
         User user = existUser.orElseGet(() ->
@@ -122,7 +133,7 @@ public class AuthService {
 
         try {
             RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.REGISTER)
-                    .orElseThrow(() -> new InvalidTokenException("Token không hợp lệ"));
+                    .orElseThrow(() -> new InvalidTokenException(AuthErrorMessages.INVALID_TOKEN));
 
             if (registerVerifyToken.getExpiryDate().isBefore(LocalDateTime.now())){
 
@@ -161,16 +172,22 @@ public class AuthService {
 
             CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
             User user = userRepository.findById(principal.getId())
-                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+                    .orElseThrow(() -> new BadCredentialsException(AuthErrorMessages.INVALID_CREDENTIALS));
 
-            if (!user.isVerified() || !user.isActive()){
-                throw new BadCredentialsException("Invalid credentials");
+            if (!user.isVerified()){
+                throw new DisabledException(AuthErrorMessages.ACCOUNT_NOT_VERIFIED);
+            }
+
+            if (!user.isActive()){
+                throw new DisabledException(AuthErrorMessages.ACCOUNT_DISABLED);
             }
 
 
             // 2. Sau khi xác thực thành công, tạo token và cho user login
-            String accessToken = jwtService.generateAccessJwt(user);
-            String refreshToken = jwtService.generateRefreshJwt(user, request);
+            long tokenVersion = tokenStateService.currentVersion(user.getId());
+            String accessToken = jwtService.generateAccessJwt(user, tokenVersion);
+            String refreshToken = jwtService.generateRefreshJwt(user, request, tokenVersion);
+            Claims refreshClaims = jwtService.validateRefreshToken(refreshToken);
 
         /*
         refreshToken sẽ được đưa vào cooke rồi gắn vào header của reponse
@@ -180,17 +197,12 @@ public class AuthService {
             // 3. add refresh to Cookie
             addRefreshCookie(refreshToken, refreshCookieMaxAgeSeconds(), response);
 
-            // 4. Lưu refreshToken vào db
-            RefreshToken rt = RefreshToken.builder()
-                    .id(UUID.randomUUID().toString())
-                    .token(refreshToken)
-                    .user(user)
-                    .expiredAt(refreshTokenExpiryTime())
-                    .ipAddress(jwtService.getIpAddress(request))
-                    .userAgent(request.getHeader("User-Agent"))
-                    .build();
-
-            refreshTokenRepository.save(rt);
+            // 4. Redis in production; MySQL fallback when local Redis is disabled.
+            if (redisTokenEnabled) {
+                redisTokenService.storeRefreshToken(refreshToken, refreshClaims, user, request);
+            } else {
+                refreshTokenRepository.save(buildRefreshToken(refreshToken, user, request));
+            }
 
             // 5. Trả accessToken về body reponse
             Map<String, Object> body = new HashMap<>();
@@ -213,8 +225,29 @@ public class AuthService {
 
         String refreshToken = getValueCookie("refreshToken", request);
 
-        if(refreshToken != null){
-            refreshTokenRepository.deleteByToken(refreshToken);
+        if(refreshToken != null && !refreshToken.isBlank()){
+            try {
+                Claims refreshClaims = jwtService.validateRefreshToken(refreshToken);
+                if (redisTokenEnabled) {
+                    redisTokenService.revokeRefreshToken(refreshClaims);
+                } else {
+                    refreshTokenRepository.deleteByToken(refreshToken);
+                }
+            } catch (JwtException | IllegalArgumentException e) {
+                log.warn("Ignoring invalid refresh token during logout: {}", e.getMessage());
+            }
+        }
+
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            try {
+                Claims accessClaims = jwtService.validateAccessToken(authHeader.substring(7).trim());
+                if (redisTokenEnabled) {
+                    redisTokenService.blacklistAccessToken(accessClaims);
+                }
+            } catch (JwtException | IllegalArgumentException e) {
+                log.warn("Ignoring invalid access token during logout: {}", e.getMessage());
+            }
         }
 
         // Xóa cookie trong trình duyệt
@@ -224,7 +257,7 @@ public class AuthService {
     @Transactional
     public void missingPassWord(String email) throws MessagingException {
         User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new EmailExistException("Tài khoản không tồn tại")
+                () -> new EmailExistException(AuthErrorMessages.ACCOUNT_NOT_FOUND)
         );
 
         registerVerifyTokenRepository.deleteByUserAndPurpose(user, TokenPurpose.PASSWORD_RESET);
@@ -249,7 +282,7 @@ public class AuthService {
 
         try {
             RegisterVerifyToken registerVerifyToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.PASSWORD_RESET)
-                    .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+                    .orElseThrow(() -> new RuntimeException(AuthErrorMessages.INVALID_TOKEN));
 
             if (registerVerifyToken.getExpiryDate().isBefore(LocalDateTime.now())){
 
@@ -270,19 +303,25 @@ public class AuthService {
     @Transactional
     public void resetPassWord(String token, String newPw) throws MessagingException {
         RegisterVerifyToken resetToken = registerVerifyTokenRepository.findByTokenAndPurpose(token, TokenPurpose.PASSWORD_RESET)
-                        .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+                .orElseThrow(() -> new RuntimeException(AuthErrorMessages.INVALID_TOKEN));
 
         if(resetToken.getExpiryDate().isBefore(LocalDateTime.now())){
             registerVerifyTokenRepository.delete(resetToken);
-            throw new RuntimeException("Token không hợp lệ");
+            throw new RuntimeException(AuthErrorMessages.INVALID_TOKEN);
         }
 
-       registerVerifyTokenRepository.delete(resetToken);
+        registerVerifyTokenRepository.delete(resetToken);
 
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPw));
         userRepository.save(user);
-        refreshTokenRepository.revokeAllByUser(user);
+        if (redisTokenEnabled) {
+            redisTokenService.revokeAllRefreshTokens(user.getId());
+            tokenStateService.revokeAllAccessTokens(user.getId());
+        } else {
+            refreshTokenRepository.revokeAllByUserId(user.getId());
+        }
+        cachedUserPrincipalService.evict(user.getId());
     }
 
     @Transactional
@@ -301,20 +340,48 @@ public class AuthService {
             throw invalidRefreshToken(response);
         }
 
-        RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
-                .filter(rt -> rt.getExpiredAt().isAfter(LocalDateTime.now()))
-                .filter(rt -> !Boolean.TRUE.equals(rt.getIsRevoked()))
-                .filter(rt -> rt.getUser() != null && Objects.equals(rt.getUser().getPublicId(), claims.getSubject()))
+        if (!redisTokenEnabled) {
+            return refreshAccessTokenFromDatabase(refreshToken, claims, request, response);
+        }
+
+        RedisTokenService.RefreshSession session;
+        try {
+            session = redisTokenService.validateRefreshToken(refreshToken, claims);
+        } catch (InvalidTokenException e) {
+            throw invalidRefreshToken(response);
+        }
+
+        if (tokenStateService.isAccessTokenRevoked(
+                session.userId(),
+                jwtService.extractTokenVersion(claims),
+                claims.getIssuedAt() == null ? null : claims.getIssuedAt().toInstant()
+        )) {
+            redisTokenService.revokeRefreshToken(claims);
+            throw invalidRefreshToken(response);
+        }
+
+        User user = userRepository.findById(session.userId())
                 .orElseThrow(() -> invalidRefreshToken(response));
 
-        User user = storedRefreshToken.getUser();
-        storedRefreshToken.setIsRevoked(true);
-        refreshTokenRepository.save(storedRefreshToken);
+        if (!user.isActive()) {
+            redisTokenService.revokeRefreshToken(claims);
+            addRefreshCookie(null, 0, response);
+            throw new DisabledException(AuthErrorMessages.ACCOUNT_DISABLED);
+        }
 
-        String newAccessToken = jwtService.generateAccessJwt(user);
-        String newRefreshToken = jwtService.generateRefreshJwt(user, request);
+        long tokenVersion = tokenStateService.currentVersion(user.getId());
+        String newAccessToken = jwtService.generateAccessJwt(user, tokenVersion);
+        String newRefreshToken = jwtService.generateRefreshJwt(user, request, tokenVersion);
+        Claims newRefreshClaims = jwtService.validateRefreshToken(newRefreshToken);
 
-        refreshTokenRepository.save(buildRefreshToken(newRefreshToken, user, request));
+        redisTokenService.rotateRefreshToken(
+                refreshToken,
+                claims,
+                newRefreshToken,
+                newRefreshClaims,
+                user,
+                request
+        );
         addRefreshCookie(newRefreshToken, refreshCookieMaxAgeSeconds(), response);
 
         return Map.of("accessToken", newAccessToken);
@@ -322,10 +389,6 @@ public class AuthService {
 
 
 
-    /*
-    .......................................................................
-     Các hàm Helper
-     */
 
     // add RefreshToken to Cookie
     public void addRefreshCookie(String refreshToken, int maxAge, HttpServletResponse response) {
@@ -365,12 +428,51 @@ public class AuthService {
         return value == null ? "" : value.replaceAll("/+$", "");
     }
 
+    private Map<String, Object> refreshAccessTokenFromDatabase(
+            String refreshToken,
+            Claims claims,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+
+        RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
+                .filter(token -> token.getExpiredAt().isAfter(now))
+                .filter(token -> !Boolean.TRUE.equals(token.getIsRevoked()))
+                .filter(token -> token.getUser() != null && Objects.equals(token.getUser().getPublicId(), claims.getSubject()))
+                .orElseThrow(() -> invalidRefreshToken(response));
+
+        if (isRefreshTokenIdleExpired(storedRefreshToken, now)) {
+            storedRefreshToken.setIsRevoked(true);
+            refreshTokenRepository.save(storedRefreshToken);
+            throw invalidRefreshToken(response);
+        }
+
+        User user = storedRefreshToken.getUser();
+        if (!user.isActive()) {
+            storedRefreshToken.setIsRevoked(true);
+            refreshTokenRepository.save(storedRefreshToken);
+            throw new DisabledException(AuthErrorMessages.ACCOUNT_DISABLED);
+        }
+
+        storedRefreshToken.setIsRevoked(true);
+        refreshTokenRepository.save(storedRefreshToken);
+
+        String newAccessToken = jwtService.generateAccessJwt(user, 0L);
+        String newRefreshToken = jwtService.generateRefreshJwt(user, request, 0L);
+        refreshTokenRepository.save(buildRefreshToken(newRefreshToken, user, request));
+        addRefreshCookie(newRefreshToken, refreshCookieMaxAgeSeconds(), response);
+
+        return Map.of("accessToken", newAccessToken);
+    }
+
     private RefreshToken buildRefreshToken(String token, User user, HttpServletRequest request) {
         return RefreshToken.builder()
                 .id(UUID.randomUUID().toString())
                 .token(token)
                 .user(user)
                 .expiredAt(refreshTokenExpiryTime())
+                .lastUsedAt(LocalDateTime.now())
                 .ipAddress(jwtService.getIpAddress(request))
                 .userAgent(request.getHeader("User-Agent"))
                 .build();
@@ -380,6 +482,16 @@ public class AuthService {
         return LocalDateTime.now().plus(Duration.ofMillis(refreshExpirationMs));
     }
 
+    private boolean isRefreshTokenIdleExpired(RefreshToken token, LocalDateTime now) {
+        LocalDateTime lastUsedAt = token.getLastUsedAt();
+
+        if (lastUsedAt == null) {
+            lastUsedAt = token.getCreatedAt() == null ? now : token.getCreatedAt();
+        }
+
+        return lastUsedAt.plus(Duration.ofMillis(idleTimeoutMs)).isBefore(now);
+    }
+
     private int refreshCookieMaxAgeSeconds() {
         long seconds = Duration.ofMillis(refreshExpirationMs).toSeconds();
         return seconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.toIntExact(seconds);
@@ -387,7 +499,7 @@ public class AuthService {
 
     private InvalidTokenException invalidRefreshToken(HttpServletResponse response) {
         addRefreshCookie(null, 0, response);
-        return new InvalidTokenException("Token khong hop le");
+        return new InvalidTokenException(AuthErrorMessages.SESSION_EXPIRED);
     }
 
     private void sendAfterCommit(EmailSender emailSender) throws MessagingException {
@@ -413,5 +525,3 @@ public class AuthService {
         void send() throws MessagingException;
     }
 }
-
-

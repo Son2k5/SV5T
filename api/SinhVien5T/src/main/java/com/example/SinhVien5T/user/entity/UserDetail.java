@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -24,6 +25,12 @@ import java.time.LocalDate;
 @Entity
 @Table(
         name = "user_details",
+        indexes = {
+                @Index(name = "idx_user_details_full_name", columnList = "full_name"),
+                @Index(name = "idx_user_details_faculty", columnList = "faculty"),
+                @Index(name = "idx_user_details_academic_year", columnList = "academic_year"),
+                @Index(name = "idx_user_details_faculty_year", columnList = "faculty, academic_year")
+        },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_user_detail_user_id", columnNames = "user_id"),
                 @UniqueConstraint(name = "uk_user_detail_identity_card", columnNames = "identity_card_number"),
