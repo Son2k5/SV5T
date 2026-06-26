@@ -5,7 +5,7 @@ export interface ApiResponse<T> {
 }
 
 export type ApplicationStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'
-export type CampaignLevel = 'UNIVERSITY' | 'CITY' | 'NATION'
+export type CampaignLevel = 'UNIVERSITY' | 'CITY' | 'NATION' | 'UNI_CITY' | 'UNI_NATION' | 'CITY_NATION' | 'ALL'
 
 export interface ApplicationRecordResponse {
   publicId: string
@@ -14,13 +14,16 @@ export interface ApplicationRecordResponse {
   level: string
   status: ApplicationStatus
   note?: string
+  isGroup?: boolean
   createdAt: string
   updatedAt: string
 }
 
-export interface CreateApplicationRecordRequest {
+export type CreateApplicationRecordRequest = {
   campaignPublicId: string
   note?: string
+  isGroup?: boolean
+  level?: CampaignLevel
 }
 
 export interface CampaignSummaryResponse {
@@ -31,28 +34,29 @@ export interface CampaignSummaryResponse {
   status?: string
   startDate?: string
   endDate?: string
+  isGroup?: 'INDIVIDUAL' | 'GROUP' | 'BOTH'
 }
 
-export interface SaveEvidenceRequest {
-  criteriaId: number
+export type SaveEvidenceRequest = {
+  criteriaPublicId: string
   evidenceUrl: string
 }
 
 export interface CriteriaDTO {
-  id: number
+  publicId: string
   name: string
   description?: string
   isMandatory: boolean
   requiredChildrenCount: number
   evidenceType?: string
   evidenceUrl?: string
-  evidenceStatus?: boolean
+  evidenceStatus?: string
   reviewerComment?: string
   subCriteriaList: CriteriaDTO[]
 }
 
 export interface StandardDTO {
-  id: number
+  publicId: string
   name: string
   description?: string
   criteriaDTOList: CriteriaDTO[]

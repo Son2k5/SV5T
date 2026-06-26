@@ -4,10 +4,13 @@ import com.example.SinhVien5T.campaign.entity.ApplicationRecord;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(
         name = "evidence",
         indexes = {
+                @Index(name = "idx_evidence_public_id", columnList = "public_id"),
                 @Index(name = "idx_evidence_application_record_id", columnList = "application_record_id"),
                 @Index(name = "idx_evidence_criteria_id", columnList = "criteria_id"),
                 @Index(name = "idx_evidence_status", columnList = "evidence_status"),
@@ -32,6 +35,9 @@ public class Evidence {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "public_id", nullable = false, unique = true, length = 36, updatable = false)
+    private String publicId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "application_record_id", nullable = false)
@@ -63,4 +69,11 @@ public class Evidence {
 
     @Column(name = "reviewer_comment", columnDefinition = "TEXT")
     private String reviewerComment;
+
+    @PrePersist
+    public void prePersist() {
+        if (publicId == null) {
+            publicId = UUID.randomUUID().toString();
+        }
+    }
 }

@@ -1,17 +1,33 @@
 package com.example.SinhVien5T.admin.dto;
 
+import com.example.SinhVien5T.user.entity.Gender;
+import com.example.SinhVien5T.user.entity.PoliticalStatus;
 import com.example.SinhVien5T.user.entity.Role;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+
 public record AdminUserCreateRequest(
-        @Email @NotBlank @Size(max = 100) String email,
-        @NotBlank @Size(min = 8, max = 72) String password,
-        @NotNull Role role,
-        @Size(max = 100) String fullName,
-        @Size(max = 50) String studentCode,
-        @Size(max = 20) String phoneNumber
+        @Email(message = "Email không hợp lệ") @NotBlank(message = "Email không được để trống") @Size(max = 100, message = "Email không được vượt quá 100 ký tự") String email,
+        @NotBlank(message = "Mật khẩu không được để trống") @Size(min = 8, max = 72, message = "Mật khẩu phải có từ 8 đến 72 ký tự") String password,
+        @NotNull(message = "Vai trò không được để trống") Role role,
+        @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự") String fullName,
+        @Size(max = 50, message = "Mã sinh viên không được vượt quá 50 ký tự") String studentCode,
+        @Size(max = 20, message = "Số điện thoại không được vượt quá 20 ký tự") String phoneNumber,
+        LocalDate birthDay,
+        Gender gender,
+        @Size(max = 12, message = "Số CCCD/CMND không được vượt quá 12 ký tự") String identityCardNumber,
+        @Size(max = 50, message = "Dân tộc không được vượt quá 50 ký tự") String ethnicity,
+        @Size(max = 150, message = "Trường không được vượt quá 150 ký tự") String school,
+        @Size(max = 150, message = "Ngành học không được vượt quá 150 ký tự") String major,
+        Integer academicYear,
+        @Size(max = 100, message = "Lớp hành chính không được vượt quá 100 ký tự") String administrativeClass,
+        @Size(max = 150, message = "Khoa không được vượt quá 150 ký tự") String faculty,
+        @Size(max = 100, message = "Chức vụ hiện tại không được vượt quá 100 ký tự") String currentPosition,
+        @Email(message = "Email liên hệ không hợp lệ") @Size(max = 100, message = "Email liên hệ không được vượt quá 100 ký tự") String contactEmail,
+        @Size(max = 100, message = "Chức vụ đoàn hội không được vượt quá 100 ký tự") String unionPosition,
+        PoliticalStatus politicalStatus
 ) {}

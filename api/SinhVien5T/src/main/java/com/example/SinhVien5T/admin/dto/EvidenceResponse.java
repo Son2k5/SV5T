@@ -1,17 +1,17 @@
 package com.example.SinhVien5T.admin.dto;
 
 public record EvidenceResponse(
-        Long id,
+        String publicId,
         String evidenceUrl,
         String evidenceOriginalFilename,
         String evidenceFormat,
         String status,
         String reviewerComment,
-        Long criteriaId,
+        String criteriaPublicId,
         String criteriaName,
-        Long userId,
+        String userPublicId,
         String userEmail,
         String studentName,
-        Long campaignId,
+        String campaignPublicId,
         String campaignName
 ) {}

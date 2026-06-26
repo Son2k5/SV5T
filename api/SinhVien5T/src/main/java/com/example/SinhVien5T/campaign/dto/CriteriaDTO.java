@@ -1,9 +1,5 @@
 package com.example.SinhVien5T.campaign.dto;
 
-import com.example.SinhVien5T.campaign.entity.EvidenceType;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 
 import java.util.List;
@@ -22,19 +18,18 @@ import java.util.List;
 public class CriteriaDTO {
 
     // Ttin criteria (lấy từ bảng Criteria)
-    private Long id;
+    private String publicId;
     private String name;
     private String description;
     private Boolean isMandatory;
     private Integer requiredChildrenCount;
     private String evidenceType;
 
-
     // Ttin evidence (lấy từ bảng Evidence)
+    private String evidencePublicId;
     private String evidenceUrl;
     private String evidenceStatus;
     private String reviewerComment;
 
     private List<CriteriaDTO> subCriteriaList;
-
 }

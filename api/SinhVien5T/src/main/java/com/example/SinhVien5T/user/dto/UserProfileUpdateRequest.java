@@ -18,89 +18,89 @@ import java.time.LocalDate;
 @Data
 public class UserProfileUpdateRequest {
 
-    @NotBlank(message = "Ho va ten la bat buoc")
-    @Size(max = 100, message = "Ho va ten khong duoc vuot qua 100 ky tu")
+    @NotBlank(message = "Họ và tên là bắt buộc")
+    @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự")
     private String fullName;
 
-    @NotNull(message = "Ngay sinh la bat buoc")
-    @Past(message = "Ngay sinh phai la ngay trong qua khu")
+    @NotNull(message = "Ngày sinh là bắt buộc")
+    @Past(message = "Ngày sinh phải là ngày trong quá khứ")
     private LocalDate birthDay;
 
-    @NotNull(message = "Gioi tinh la bat buoc")
+    @NotNull(message = "Giới tính là bắt buộc")
     private Gender gender;
 
-    @NotBlank(message = "So CCCD/CMND la bat buoc")
-    @Pattern(regexp = "^(\\d{9}|\\d{12})$", message = "So CCCD/CMND phai gom 9 hoac 12 chu so")
+    @NotBlank(message = "Số CCCD/CMND là bắt buộc")
+    @Pattern(regexp = "^(\\d{9}|\\d{12})$", message = "Số CCCD/CMND phải gồm 9 hoặc 12 chữ số")
     private String identityCardNumber;
 
-    @NotBlank(message = "Dan toc la bat buoc")
-    @Size(max = 50, message = "Dan toc khong duoc vuot qua 50 ky tu")
+    @NotBlank(message = "Dân tộc là bắt buộc")
+    @Size(max = 50, message = "Dân tộc không được vượt quá 50 ký tự")
     private String ethnicity;
 
-    @NotBlank(message = "Truong la bat buoc")
-    @Size(max = 150, message = "Truong khong duoc vuot qua 150 ky tu")
+    @NotBlank(message = "Trường là bắt buộc")
+    @Size(max = 150, message = "Trường không được vượt quá 150 ký tự")
     private String school;
 
-    @Size(max = 150, message = "Nganh hoc khong duoc vuot qua 150 ky tu")
+    @Size(max = 150, message = "Ngành học không được vượt quá 150 ký tự")
     private String major;
 
-    @NotNull(message = "Sinh vien nam la bat buoc")
-    @Min(value = 1, message = "Sinh vien nam phai tu 1 tro len")
-    @Max(value = 10, message = "Sinh vien nam khong duoc vuot qua 10")
+    @NotNull(message = "Sinh viên năm là bắt buộc")
+    @Min(value = 1, message = "Sinh viên năm phải từ 1 trở lên")
+    @Max(value = 10, message = "Sinh viên năm không được vượt quá 10")
     private Integer academicYear;
 
-    @NotBlank(message = "Ma sinh vien la bat buoc")
-    @Size(max = 50, message = "Ma sinh vien khong duoc vuot qua 50 ky tu")
-    @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "Ma sinh vien chi duoc chua chu, so, dau gach ngang, gach duoi hoac dau cham")
+    @NotBlank(message = "Mã sinh viên là bắt buộc")
+    @Size(max = 50, message = "Mã sinh viên không được vượt quá 50 ký tự")
+    @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "Mã sinh viên chỉ được chứa chữ, số, dấu gạch ngang, gạch dưới hoặc dấu chấm")
     private String studentCode;
 
-    @NotBlank(message = "Lop hanh chinh la bat buoc")
-    @Size(max = 100, message = "Lop hanh chinh khong duoc vuot qua 100 ky tu")
+    @NotBlank(message = "Lớp hành chính là bắt buộc")
+    @Size(max = 100, message = "Lớp hành chính không được vượt quá 100 ký tự")
     private String administrativeClass;
 
-    @NotBlank(message = "Khoa la bat buoc")
-    @Size(max = 150, message = "Khoa khong duoc vuot qua 150 ky tu")
+    @NotBlank(message = "Khoa là bắt buộc")
+    @Size(max = 150, message = "Khoa không được vượt quá 150 ký tự")
     private String faculty;
 
-    @NotBlank(message = "Chuc vu hien tai la bat buoc")
-    @Size(max = 100, message = "Chuc vu hien tai khong duoc vuot qua 100 ky tu")
+    @NotBlank(message = "Chức vụ hiện tại là bắt buộc")
+    @Size(max = 100, message = "Chức vụ hiện tại không được vượt quá 100 ký tự")
     private String currentPosition;
 
     @Valid
-    @NotNull(message = "Dia chi thuong tru la bat buoc")
+    @NotNull(message = "Địa chỉ thường trú là bắt buộc")
     private AddressRequest permanentAddress;
 
     @Valid
-    @NotNull(message = "Dia chi tam tru la bat buoc")
+    @NotNull(message = "Địa chỉ tạm trú là bắt buộc")
     private AddressRequest temporaryAddress;
 
-    @NotBlank(message = "Email lien he la bat buoc")
-    @Email(message = "Email lien he khong hop le")
-    @Size(max = 100, message = "Email lien he khong duoc vuot qua 100 ky tu")
+    @NotBlank(message = "Email liên hệ là bắt buộc")
+    @Email(message = "Email liên hệ không hợp lệ")
+    @Size(max = 100, message = "Email liên hệ không được vượt quá 100 ký tự")
     private String contactEmail;
 
-    @NotBlank(message = "So dien thoai la bat buoc")
-    @Pattern(regexp = "^[0-9+\\-\\s]{8,20}$", message = "So dien thoai khong hop le")
+    @NotBlank(message = "Số điện thoại là bắt buộc")
+    @Pattern(regexp = "^[0-9+\\-\\s]{8,20}$", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
-    @Size(max = 100, message = "Chuc vu doan hoi khong duoc vuot qua 100 ky tu")
+    @Size(max = 100, message = "Chức vụ đoàn hội không được vượt quá 100 ký tự")
     private String unionPosition;
 
-    @NotNull(message = "Trang thai Dang vien/Doan vien la bat buoc")
+    @NotNull(message = "Trạng thái Đảng viên/Đoàn viên là bắt buộc")
     private PoliticalStatus politicalStatus;
 
     @Data
     public static class AddressRequest {
-        @NotBlank(message = "Tinh/thanh pho la bat buoc")
-        @Size(max = 100, message = "Tinh/thanh pho khong duoc vuot qua 100 ky tu")
+        @NotBlank(message = "Tỉnh/thành phố là bắt buộc")
+        @Size(max = 100, message = "Tỉnh/thành phố không được vượt quá 100 ký tự")
         private String provinceCity;
 
-        @NotBlank(message = "Quan/huyen la bat buoc")
-        @Size(max = 100, message = "Quan/huyen khong duoc vuot qua 100 ky tu")
+        @NotBlank(message = "Quận/huyện là bắt buộc")
+        @Size(max = 100, message = "Quận/huyện không được vượt quá 100 ký tự")
         private String district;
 
-        @NotBlank(message = "Dia chi cu the la bat buoc")
-        @Size(max = 255, message = "Dia chi cu the khong duoc vuot qua 255 ky tu")
+        @NotBlank(message = "Địa chỉ cụ thể là bắt buộc")
+        @Size(max = 255, message = "Địa chỉ cụ thể không được vượt quá 255 ký tự")
         private String detailAddress;
     }
 }

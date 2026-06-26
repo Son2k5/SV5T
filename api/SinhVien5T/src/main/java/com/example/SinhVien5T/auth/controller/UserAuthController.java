@@ -6,9 +6,11 @@ import com.example.SinhVien5T.auth.dto.request.UserResetPwRequest;
 import com.example.SinhVien5T.common.dto.response.ApiResponse;
 import com.example.SinhVien5T.auth.service.AuthService;
 import com.example.SinhVien5T.user.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +22,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user/auth")
 @RequiredArgsConstructor
-
+@Tag(name = "Authentication", description = "Đăng ký, đăng nhập, làm mới token và đặt lại mật khẩu")
 public class UserAuthController {
 
     private final UserService userService;
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> register(@RequestBody UserRegisterRequest request) throws Exception {
+    public ResponseEntity<ApiResponse> register(@Valid @RequestBody UserRegisterRequest request) throws Exception {
 
         authService.register(request);
 
@@ -46,7 +48,7 @@ public class UserAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request, HttpServletResponse response) throws MessagingException {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@Valid @RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request, HttpServletResponse response) throws MessagingException {
 
         Map<String, Object> data = authService.login(userLoginRequest, request, response);
 
@@ -69,7 +71,7 @@ public class UserAuthController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> refreshAccessToken(HttpServletRequest request, HttpServletResponse response){
         Map<String, Object> body = authService.refreshAccessToken(request, response);
 
-        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("Refresh access token thành công", body);
+        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success("Làm mới phiên đăng nhập thành công", body);
 
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
@@ -85,15 +87,15 @@ public class UserAuthController {
         boolean isValid = authService.verifyResetPwToken(token);
 
         if (isValid) {
-            return ResponseEntity.ok(ApiResponse.success("Token hợp lệ", null));
+            return ResponseEntity.ok(ApiResponse.success("Mã đặt lại mật khẩu hợp lệ", null));
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Token hết hạn hoặc không tồn tại"));
+                    .body(ApiResponse.error("Mã đặt lại mật khẩu đã hết hạn hoặc không tồn tại"));
         }
     }
 
     @PostMapping("/reset_password")
-    public ResponseEntity<ApiResponse<String>> resetPassWord(@RequestBody UserResetPwRequest request) throws MessagingException {
+    public ResponseEntity<ApiResponse<String>> resetPassWord(@Valid @RequestBody UserResetPwRequest request) throws MessagingException {
 
         authService.resetPassWord(request.getToken(), request.getNewPw());
 

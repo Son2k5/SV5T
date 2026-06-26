@@ -7,11 +7,13 @@ import lombok.*;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(
         name = "criteria",
         indexes = {
+                @Index(name = "idx_criteria_public_id", columnList = "public_id"),
                 @Index(name = "idx_criteria_standard_id", columnList = "standard_id"),
                 @Index(name = "idx_criteria_parent_id", columnList = "parent_id"),
                 @Index(name = "idx_criteria_standard_parent", columnList = "standard_id,parent_id"),
@@ -30,6 +32,10 @@ public class Criteria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "public_id", nullable = false, unique = true, length = 36, updatable = false)
+    private String publicId;
+
+    @Column(name = "name", nullable = false, length = 500)
     private String name;
 
 
@@ -57,6 +63,10 @@ public class Criteria {
     private String description;
 
     @Builder.Default
+    @Column(name = "order_index", nullable = false, columnDefinition = "integer default 0")
+    private Integer orderIndex = 0;
+
+    @Builder.Default
     @Column(name = "is_mandatory")
     private Boolean isMandatory = true;
 
@@ -68,6 +78,11 @@ public class Criteria {
     @Enumerated(EnumType.STRING)
     private EvidenceType evidenceType;
 
+    @PrePersist
+    public void prePersist() {
+        if (publicId == null) {
+            publicId = UUID.randomUUID().toString();
+        }
+    }
+
 }
-
-

@@ -56,6 +56,6 @@ public class UserAddress extends BaseAuditEntity {
     @Column(nullable = false, length = 100)
     private String district;
 
-    @Column(name = "detail_address", nullable = false, length = 255)
+    @Column(name = "detail_address", nullable = false, length = 500)
     private String detailAddress;
 }

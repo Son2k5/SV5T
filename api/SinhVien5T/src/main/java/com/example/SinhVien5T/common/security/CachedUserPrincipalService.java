@@ -22,7 +22,7 @@ public class CachedUserPrincipalService {
     @Transactional(readOnly = true)
     public CachedUserPrincipal loadByUserId(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new JwtException("User not found"));
+                .orElseThrow(() -> new JwtException("Không tìm thấy người dùng"));
 
         return new CachedUserPrincipal(
                 user.getId(),

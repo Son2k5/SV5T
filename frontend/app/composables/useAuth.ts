@@ -1,15 +1,17 @@
 import type { ApiResponse, LogInPayload, LoginResponse, RegisterPayload, ResetPasswordPayload } from '~/types/auth'
 import type { H3Event } from 'h3'
+import { getCurrentInstance } from 'vue'
 import { LogInEndpoint, LogOutEndpoint, MissingPasswordEndpoint, refreshAccessTokenEndpoint, RegisterEndpoint, ResetPasswordEndpoint, VerifyResetEndpoint } from '~/constants/endpoints'
 import { getErrorMessage } from '~/utils/errors'
 
-type AuthFetchOptions = {
-  method?: string
-  headers?: HeadersInit
-  body?: unknown
+type HttpMethod = 'GET' | 'HEAD' | 'PATCH' | 'POST' | 'PUT' | 'DELETE' | 'CONNECT' | 'OPTIONS' | 'TRACE' | 'get' | 'head' | 'patch' | 'post' | 'put' | 'delete' | 'connect' | 'options' | 'trace'
+
+interface AuthFetchOptions {
+  credentials?: 'include'
+  headers?: Headers
+  method?: HttpMethod
+  body?: BodyInit | Record<string, unknown> | null
   query?: Record<string, unknown>
-  credentials?: RequestCredentials
-  [key: string]: unknown
 }
 
 type FetchErrorLike = {
@@ -109,7 +111,9 @@ const clearIdleTimer = () => {
 }
 
 export const useAuth = () => {
-  const toast = useToast()
+  // Route middleware and Nuxt plugins have no Vue component instance. Calling
+  // useToast() there emits an inject warning, while auth itself still works.
+  const toast = getCurrentInstance() ? useToast() : null
   const requestEvent = import.meta.server ? useRequestEvent() : null
   const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 
@@ -388,7 +392,7 @@ export const useAuth = () => {
         throw new Error('Missing access token')
       }
 
-      toast.add({
+      toast?.add({
         title: 'Đăng nhập thành công!',
         description: message,
       })
@@ -398,7 +402,7 @@ export const useAuth = () => {
       return data
     }
     catch (error) {
-      toast.add({
+      toast?.add({
         title: 'Đăng nhập thất bại!',
         description: getErrorMessage(error, 'Vui lòng thử lại sau.'),
         color: 'error',
@@ -414,14 +418,14 @@ export const useAuth = () => {
         body: payload,
       })
 
-      toast.add({
+      toast?.add({
         title: 'Đăng ký thành công!',
         description: message,
       })
       return data
     }
     catch (error) {
-      toast.add({
+      toast?.add({
         title: 'Đăng ký thất bại!',
         color: 'error',
         description: getErrorMessage(error, 'Vui lòng thử lại sau.'),
@@ -437,14 +441,14 @@ export const useAuth = () => {
         query: { email },
       })
 
-      toast.add({
+      toast?.add({
         title: 'Đã gửi mail!',
         description: `Hướng dẫn phục hồi tài khoản đã được gửi về ${email}`,
       })
       return data
     }
     catch {
-      toast.add({
+      toast?.add({
         title: 'Gửi mail thất bại!',
         description: 'Vui lòng thử lại sau.',
         color: 'error',
@@ -460,14 +464,14 @@ export const useAuth = () => {
         body: payload,
       })
 
-      toast.add({
+      toast?.add({
         title: 'Thay đổi mật khẩu thành công!',
         description: message,
       })
       return data
     }
     catch {
-      toast.add({
+      toast?.add({
         title: 'Thay đổi mật khẩu thất bại!',
         description: 'Vui lòng thử lại sau.',
         color: 'error',

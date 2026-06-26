@@ -1,14 +1,17 @@
 export type Criteria = {
-  id: number
+  publicId: string
   isMandatory: boolean
   name: string
   description: string
-  evidenceStatus: boolean
+  evidenceStatus: string | null
   evidenceType: string
   reviewerComment: string | null
+  subCriteriaList?: Criteria[]
 }
 
 export type CriteriaStandard = {
-  id: number
+  publicId: string
+  name: string
+  description?: string
   criteriaDTOList: Criteria[]
 }

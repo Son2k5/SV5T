@@ -32,7 +32,7 @@ public class ApplicationConfig {
                         user,
                         userPermissionRepository.findByUserId(user.getId())
                 ))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng"));
     }
 
     @Bean

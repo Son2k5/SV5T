@@ -16,4 +16,5 @@ public class CampaignSummaryResponse {
     private String status;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String isGroup;
 }

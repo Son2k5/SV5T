@@ -14,6 +14,7 @@ public class ApplicationRecordResponse {
     private String level;
     private String status;
     private String note;
+    private Boolean isGroup;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

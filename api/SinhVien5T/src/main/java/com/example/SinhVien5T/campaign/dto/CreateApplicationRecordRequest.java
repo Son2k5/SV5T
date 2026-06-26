@@ -14,4 +14,8 @@ public class CreateApplicationRecordRequest {
 
     @Size(max = 1000, message = "Ghi chú không được vượt quá 1000 ký tự")
     private String note;
+
+    private Boolean isGroup = false;
+
+    private String level;
 }

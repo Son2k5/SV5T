@@ -4,5 +4,6 @@ public record DashboardResponse(
         long totalUsers,
         long activeCampaigns,
         long pendingEvidences,
-        Object topStudents
+        double passRate,
+        double failRate
 ) {}

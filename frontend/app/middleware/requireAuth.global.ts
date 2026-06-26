@@ -1,3 +1,5 @@
+import { useAdminAccess } from '~/composables/admin/useAdminAccess'
+
 export default defineNuxtRouteMiddleware(async (to) => {
   const { ensureAccessToken, hasIdleExpired, logOut } = useAuth()
 
@@ -9,5 +11,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     const hasToken = await ensureAccessToken()
     if (!hasToken) return navigateTo('/login?error=session_expired')
+
+    // Keep administrator and student workspaces separate after authentication.
+    const { isAdmin } = useAdminAccess()
+    if (isAdmin.value) return navigateTo('/admin/dashboard')
   }
 })

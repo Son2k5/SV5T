@@ -1,5 +1,6 @@
 package com.example.SinhVien5T.common.exception;
 
+import com.example.SinhVien5T.admin.exception.BadRequestException;
 import com.example.SinhVien5T.auth.exception.AuthErrorMessages;
 import com.example.SinhVien5T.auth.exception.InvalidEmailDomainException;
 import com.example.SinhVien5T.auth.exception.InvalidTokenException;
@@ -27,7 +28,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionHandel {
+public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmailExistException.class)
     public ResponseEntity<ApiResponse> handleEmailExistException(EmailExistException ex) {
@@ -61,7 +62,7 @@ public class GlobalExceptionHandel {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse> handleBadCredentialsException(BadCredentialsException ex) {
-        return new ResponseEntity<>(ApiResponse.error("Tai khoan hoac mat khau khong chinh xac"), HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(ApiResponse.error(AuthErrorMessages.INVALID_CREDENTIALS), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(DisabledException.class)
@@ -76,14 +77,14 @@ public class GlobalExceptionHandel {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         return new ResponseEntity<>(
-                ApiResponse.error("Method " + ex.getMethod() + " is not supported for this endpoint"),
+                ApiResponse.error("Phương thức yêu cầu không được hỗ trợ"),
                 HttpStatus.METHOD_NOT_ALLOWED
         );
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        return new ResponseEntity<>(ApiResponse.error("Request body is not valid JSON"), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(ApiResponse.error("Dữ liệu gửi lên không hợp lệ"), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -98,7 +99,7 @@ public class GlobalExceptionHandel {
                 errors.put(error.getField(), error.getDefaultMessage())
         );
 
-        String errorMessage = "Du lieu khong hop le";
+        String errorMessage = "Dữ liệu không hợp lệ";
         if (!errors.isEmpty()) {
             errorMessage = errors.values().iterator().next();
         }
@@ -115,12 +116,12 @@ public class GlobalExceptionHandel {
     @ExceptionHandler(FileStorageException.class)
     public ResponseEntity<ApiResponse> handleFileStorageException(FileStorageException ex) {
         log.warn("File storage error", ex);
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
+        return new ResponseEntity<>(ApiResponse.error("Không thể xử lý tệp tải lên. Vui lòng thử lại sau."), HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
-        return new ResponseEntity<>(ApiResponse.error("File upload vuot qua dung luong cho phep"), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(ApiResponse.error("Tệp tải lên vượt quá dung lượng cho phép"), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(DuplicateApplicationRecordException.class)
@@ -141,27 +142,32 @@ public class GlobalExceptionHandel {
     public ResponseEntity<ApiResponse> handleGlobalException(Exception ex) {
         log.error("Unhandled exception", ex);
         return new ResponseEntity<>(
-                ApiResponse.error("Loi he thong, vui long thu lai sau"),
+                ApiResponse.error("Đã xảy ra sự cố, vui lòng thử lại sau"),
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse> handleBadRequestException(BadRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
     private String dataIntegrityMessage(DataIntegrityViolationException ex) {
         String detail = String.valueOf(ex.getMostSpecificCause().getMessage()).toLowerCase();
 
         if (detail.contains("uk_application_record_user_campaign")) {
-            return "Ban da dang ky ho so cho dot xet chon nay";
+            return "Bạn đã đăng ký hồ sơ cho đợt xét chọn này";
         }
         if (detail.contains("uk_user_detail_identity_card")) {
-            return "So CCCD/CMND da ton tai";
+            return "Số CCCD/CMND đã tồn tại";
         }
         if (detail.contains("uk_user_detail_student_code")) {
-            return "Ma sinh vien da ton tai";
+            return "Mã sinh viên đã tồn tại";
         }
         if (detail.contains("users.email") || detail.contains("email")) {
-            return "Email da ton tai";
+            return "Email đã tồn tại";
         }
 
-        return "Du lieu khong hop le hoac trung voi du lieu da ton tai";
+        return "Dữ liệu không hợp lệ hoặc đã tồn tại";
     }
 }

@@ -103,7 +103,25 @@ const schema = z.object({
   userPassword: z.string().min(1, 'Vui lòng nhập mật khẩu!'),
 })
 
-const { accessToken, logIn } = useAuth()
+const { logIn } = useAuth()
+
+// Helper function to decode JWT token
+const decodeJwtToken = (token: string) => {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+
+    const payload = parts[1]
+    if (!payload) return null
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=')
+    return JSON.parse(atob(padded))
+  }
+  catch {
+    return null
+  }
+}
 
 const handleLogIn = async () => {
   if (isLoading.value) return
@@ -111,8 +129,12 @@ const handleLogIn = async () => {
   isLoading.value = true
   try {
     const data = await logIn(logInPayloadState)
-    if (data && accessToken.value) {
-      await router.replace('/dashboard')
+    if (data && typeof data === 'object' && 'accessToken' in data) {
+      // Decode role from JWT token (more reliable than response data)
+      const tokenPayload = decodeJwtToken(data.accessToken)
+      const role = String(tokenPayload?.role || '').replace(/^ROLE_/, '').toUpperCase()
+
+      await router.replace(role === 'ADMIN' ? '/admin/dashboard' : '/dashboard')
     }
   }
   finally {

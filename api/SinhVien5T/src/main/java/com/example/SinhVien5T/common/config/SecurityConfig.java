@@ -1,6 +1,10 @@
 package com.example.SinhVien5T.common.config;
 
+import com.example.SinhVien5T.auth.exception.AuthErrorMessages;
+import com.example.SinhVien5T.common.dto.response.ApiResponse;
 import com.example.SinhVien5T.common.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +33,7 @@ public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.cors.allowed-origins}")
     private String corsAllowedOrigins;
@@ -40,6 +45,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF vì dùng JWT (stateless, không session)
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng session, chỉ JWT
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            objectMapper.writeValue(response.getWriter(), ApiResponse.error(AuthErrorMessages.INVALID_SESSION));
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            objectMapper.writeValue(response.getWriter(), ApiResponse.error("Bạn không có quyền thực hiện thao tác này"));
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
                         // Thêm các Public endpoint ko cần authen
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

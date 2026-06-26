@@ -1,4 +1,4 @@
-export type Role = 'USER' | 'ADMIN'
+export type Role = 'USER' | 'MENTOR' | 'ADMIN'
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
 export type PoliticalStatus = 'NONE' | 'UNION_MEMBER' | 'PARTY_MEMBER'
 

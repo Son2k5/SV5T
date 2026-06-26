@@ -1,7 +1,11 @@
 package com.example.SinhVien5T.admin.dto;
 
 public record StandardResponse(
-        Long id,
+        String publicId,
         String name,
-        String description
+        String description,
+        String campaignPublicId,
+        Long criteriaCount,
+        Boolean isGroup,
+        String level
 ) {}

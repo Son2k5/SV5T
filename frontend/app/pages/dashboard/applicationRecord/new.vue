@@ -60,7 +60,7 @@ async function loadCurrentCampaign() {
   currentCampaign.value = null
 
   try {
-    const res = await getCurrentCampaign(selectedLevel.value)
+    const res = await getCurrentCampaign(selectedLevel.value, selectedMode.value === 'group')
     currentCampaign.value = res.data
   }
   catch (errorResponse) {
@@ -90,6 +90,8 @@ async function openEvidenceWorkspace() {
     const res = await createApplicationRecord({
       campaignPublicId,
       note: `${selectedModeLabel.value} - ${selectedLevelLabel.value}`,
+      isGroup: selectedMode.value === 'group',
+      level: selectedLevel.value,
     })
 
     await navigateTo({
@@ -105,7 +107,7 @@ async function openEvidenceWorkspace() {
     const message = getErrorMessage(errorResponse, '')
 
     if (status === 409 || message.includes('đã đăng ký') || message.includes('Ä‘Ã£ Ä‘Äƒng kÃ½')) {
-      const res = await getMyApplicationRecord(campaignPublicId)
+      const res = await getMyApplicationRecord(campaignPublicId, selectedMode.value === 'group', selectedLevel.value)
       await navigateTo({
         path: `/dashboard/applicationRecord/${res.data.campaignPublicId}/evidences`,
         query: {
@@ -123,7 +125,7 @@ async function openEvidenceWorkspace() {
   }
 }
 
-watch(selectedLevel, () => {
+watch([selectedLevel, selectedMode], () => {
   loadCurrentCampaign()
 })
 
@@ -211,7 +213,10 @@ onMounted(() => {
               <span v-else-if="currentCampaign">{{ currentCampaign.name }}</span>
               <span v-else>Chưa có đợt xét chọn</span>
             </h3>
-            <p v-if="currentCampaign" class="mt-1 text-sm text-[#64748B]">
+            <p
+              v-if="currentCampaign"
+              class="mt-1 text-sm text-[#64748B]"
+            >
               Năm học {{ currentCampaign.academicYear }} · {{ selectedLevelLabel }} · {{ selectedModeLabel }}
             </p>
           </div>
@@ -230,7 +235,10 @@ onMounted(() => {
           </button>
         </div>
 
-        <p v-if="error" class="mt-4 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600">
+        <p
+          v-if="error"
+          class="mt-4 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600"
+        >
           {{ error }}
         </p>
       </div>

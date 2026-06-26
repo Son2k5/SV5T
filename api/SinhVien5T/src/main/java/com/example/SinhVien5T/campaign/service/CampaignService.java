@@ -38,11 +38,12 @@ public class CampaignService {
         private final EvidenceRepository evidenceRepository;
         private final StandardRepository standardRepository;
 
-        @Cacheable(cacheNames = CacheConfig.CAMPAIGN_CURRENT, key = "#level.name()", sync = true)
+        @Cacheable(cacheNames = CacheConfig.CAMPAIGN_CURRENT, key = "#level.name() + ':' + (#isGroup != null ? #isGroup : false)", sync = true)
         @Transactional(readOnly = true)
-        public CampaignSummaryResponse getCurrentCampaign(Level level) {
-                Campaign campaign = campaignRepository.findOpenCampaignsByLevel(
+        public CampaignSummaryResponse getCurrentCampaign(Level level, Boolean isGroup) {
+                Campaign campaign = campaignRepository.findOpenCampaignsByLevelAndIsGroup(
                                 level,
+                                isGroup != null ? isGroup : false,
                                 LocalDate.now(),
                                 PageRequest.of(0, 1)
                         )
@@ -55,12 +56,14 @@ public class CampaignService {
 
         @Cacheable(
                 cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
-                key = "#campaignPublicId + ':' + #authentication.principal.id",
+                key = "#campaignPublicId + ':' + #isGroup + ':' + (#level != null ? #level.name() : 'UNIVERSITY') + ':' + #authentication.principal.id",
                 sync = true
         )
         @Transactional(readOnly = true)
         public List<StandardDTO> getCriteriaTreeByCampaignPublicId(
                 String campaignPublicId,
+                Boolean isGroup,
+                Level level,
                 Authentication authentication
         ) {
                 CustomUserDetails currentUser = getCurrentUser(authentication);
@@ -68,8 +71,15 @@ public class CampaignService {
                 Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
 
+                boolean isGroupVal = isGroup != null ? isGroup : false;
+
+                Level targetLevel = level;
+                if (targetLevel == null) {
+                    targetLevel = campaign.getLevel().getDefaultLevel();
+                }
+
                 Optional<ApplicationRecord> recordOptional = applicationRecordRepository
-                        .findByUserIdAndCampaignId(currentUser.getId(), campaign.getId());
+                        .findByUserIdAndCampaignIdAndIsGroupAndLevel(currentUser.getId(), campaign.getId(), isGroupVal, targetLevel);
 
                 Map<Long, Evidence> evidenceMap = new HashMap<>();
 
@@ -90,7 +100,14 @@ public class CampaignService {
                 }
 
                 List<Criteria> criteriaList = criteriaRepository
-                        .findAllByCampaignIdWithStandardAndParent(campaign.getId());
+                        .findAllByCampaignIdAndIsGroupWithStandardAndParent(campaign.getId(), isGroupVal);
+
+                if (campaign.getLevel().isMultiLevel()) {
+                    final Level finalLevel = targetLevel;
+                    criteriaList = criteriaList.stream()
+                            .filter(c -> c.getStandard().getLevel() == finalLevel)
+                            .toList();
+                }
 
                 Map<Long, CriteriaDTO> criteriaDTOMap = criteriaList.stream()
                         .collect(Collectors.toMap(
@@ -121,9 +138,17 @@ public class CampaignService {
 
                 List<StandardDTO> result = new ArrayList<>();
 
-                for (Standard standard : standardRepository.findByCampaignId(campaign.getId())) {
+                List<Standard> standards = standardRepository.findByCampaignIdAndIsGroup(campaign.getId(), isGroupVal);
+                if (campaign.getLevel().isMultiLevel()) {
+                    final Level finalLevel = targetLevel;
+                    standards = standards.stream()
+                            .filter(s -> s.getLevel() == finalLevel)
+                            .toList();
+                }
+
+                for (Standard standard : standards) {
                         StandardDTO standardDTO = StandardDTO.builder()
-                                .id(standard.getId())
+                                .publicId(standard.getPublicId())
                                 .name(standard.getName())
                                 .description(standard.getDescription())
                                 .criteriaDTOList(
@@ -147,7 +172,7 @@ public class CampaignService {
                 Evidence evidence = evidenceMap.get(criteria.getId());
 
                 return CriteriaDTO.builder()
-                        .id(criteria.getId())
+                        .publicId(criteria.getPublicId())
                         .name(criteria.getName())
                         .description(criteria.getDescription())
                         .isMandatory(criteria.getIsMandatory())
@@ -156,6 +181,11 @@ public class CampaignService {
                                 criteria.getEvidenceType() == null
                                         ? null
                                         : criteria.getEvidenceType().name()
+                        )
+                        .evidencePublicId(
+                                evidence == null
+                                        ? null
+                                        : evidence.getPublicId()
                         )
                         .evidenceUrl(
                                 evidence == null
@@ -185,6 +215,7 @@ public class CampaignService {
                         .status(campaign.getCampaignStatus().name())
                         .startDate(campaign.getStartDate())
                         .endDate(campaign.getEndDate())
+                        .isGroup(campaign.getIsGroup() != null ? campaign.getIsGroup().name() : com.example.SinhVien5T.campaign.entity.CampaignType.INDIVIDUAL.name())
                         .build();
         }
 

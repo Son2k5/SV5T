@@ -61,9 +61,9 @@ public class CloudinaryStorageService {
     public StoredAsset uploadUserAvatar(String imageDataUrl, String userPublicId) {
         ensureConfigured();
         if (!isImageDataUrl(imageDataUrl)) {
-            throw new IllegalArgumentException("Avatar không hợp lệ");
+            throw new IllegalArgumentException("Ảnh đại diện không hợp lệ");
         }
-        validateDataUrlSize(imageDataUrl, avatarMaxBytes, "Avatar không được vượt quá 1MB");
+        validateDataUrlSize(imageDataUrl, avatarMaxBytes, "Ảnh đại diện không được vượt quá 1MB");
 
         String extension = imageDataUrlExtension(imageDataUrl);
         String folder = joinFolder(rootFolder, avatarFolder, sanitizePathSegment(userPublicId));
@@ -72,7 +72,7 @@ public class CloudinaryStorageService {
 
     public StoredAsset uploadUserAvatar(MultipartFile file, String userPublicId) {
         ensureConfigured();
-        validateMultipartFile(file, avatarMaxBytes, AVATAR_EXTENSIONS, "Avatar");
+        validateMultipartFile(file, avatarMaxBytes, AVATAR_EXTENSIONS, "Ảnh đại diện");
 
         String extension = fileExtension(file.getOriginalFilename());
         String folder = joinFolder(rootFolder, avatarFolder, sanitizePathSegment(userPublicId));
@@ -131,7 +131,7 @@ public class CloudinaryStorageService {
         try {
             cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
         } catch (IOException ex) {
-            throw new FileStorageException("Không thể xóa file cũ trên Cloudinary", ex);
+            throw new FileStorageException("Không thể xóa tệp cũ", ex);
         }
     }
 
@@ -161,7 +161,7 @@ public class CloudinaryStorageService {
                     originalFilename
             );
         } catch (IOException | RuntimeException ex) {
-            throw new FileStorageException("Không thể upload file lên Cloudinary", ex);
+            throw new FileStorageException("Không thể tải tệp lên", ex);
         }
     }
 
@@ -177,7 +177,7 @@ public class CloudinaryStorageService {
 
     private void ensureConfigured() {
         if (StringUtils.isAnyBlank(cloudName, apiKey, apiSecret)) {
-            throw new FileStorageException("Chưa cấu hình Cloudinary");
+            throw new FileStorageException("Chưa cấu hình dịch vụ lưu trữ tệp");
         }
     }
 
@@ -221,7 +221,7 @@ public class CloudinaryStorageService {
         try {
             return file.getBytes();
         } catch (IOException ex) {
-            throw new FileStorageException("Không thể đọc file upload", ex);
+            throw new FileStorageException("Không thể đọc tệp tải lên", ex);
         }
     }
 
@@ -239,7 +239,7 @@ public class CloudinaryStorageService {
         String normalized = StringUtils.trimToEmpty(filename);
         int dotIndex = normalized.lastIndexOf('.');
         if (dotIndex < 0 || dotIndex == normalized.length() - 1) {
-            throw new IllegalArgumentException("File phải có phần mở rộng");
+            throw new IllegalArgumentException("Tệp phải có phần mở rộng");
         }
 
         return normalized.substring(dotIndex + 1).toLowerCase(Locale.ROOT);

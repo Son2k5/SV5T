@@ -22,7 +22,7 @@ const hasEvidence = computed(() => Boolean(props.criteria.evidenceUrl))
 
 watch(
   () => props.criteria.evidenceUrl,
-  value => {
+  (value) => {
     evidenceUrl.value = value ?? ''
   },
 )
@@ -76,7 +76,10 @@ const handleFileChange = (event: Event) => {
           </span>
         </div>
 
-        <p v-if="criteria.description" class="mt-2 text-sm leading-6 text-[#64748B]">
+        <p
+          v-if="criteria.description"
+          class="mt-2 text-sm leading-6 text-[#64748B]"
+        >
           {{ criteria.description }}
         </p>
       </div>
@@ -97,8 +100,14 @@ const handleFileChange = (event: Event) => {
       </div>
     </button>
 
-    <div v-if="isOpen" class="border-t border-[#E5E7EB] p-5">
-      <div v-if="criteria.evidenceUrl" class="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-700">
+    <div
+      v-if="isOpen"
+      class="border-t border-[#E5E7EB] p-5"
+    >
+      <div
+        v-if="criteria.evidenceUrl"
+        class="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-700"
+      >
         Minh chứng hiện tại:
         <a
           :href="criteria.evidenceUrl"
@@ -109,7 +118,10 @@ const handleFileChange = (event: Event) => {
         </a>
       </div>
 
-      <div v-if="!disabled" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div
+        v-if="!disabled"
+        class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+      >
         <div class="rounded-md border border-[#E5E7EB] p-4">
           <label class="block text-sm font-bold text-[#1E293B]">
             Link minh chứng
@@ -151,11 +163,17 @@ const handleFileChange = (event: Event) => {
         </div>
       </div>
 
-      <p v-if="localError" class="mt-3 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600">
+      <p
+        v-if="localError"
+        class="mt-3 rounded-md bg-red-50 p-3 text-sm font-semibold text-red-600"
+      >
         {{ localError }}
       </p>
 
-      <div v-if="hasChildren" class="mt-5 space-y-3 border-l-2 border-blue-100 pl-4">
+      <div
+        v-if="hasChildren"
+        class="mt-5 space-y-3 border-l-2 border-blue-100 pl-4"
+      >
         <EvidenceCard
           v-for="child in criteria.subCriteriaList"
           :key="child.id"

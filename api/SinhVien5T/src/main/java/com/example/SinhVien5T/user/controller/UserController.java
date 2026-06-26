@@ -5,6 +5,8 @@ import com.example.SinhVien5T.user.dto.UserAvatarUpdateRequest;
 import com.example.SinhVien5T.user.dto.UserProfileResponse;
 import com.example.SinhVien5T.user.dto.UserProfileUpdateRequest;
 import com.example.SinhVien5T.user.service.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -22,6 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@Tag(name = "User profile", description = "Thông tin và ảnh đại diện của người dùng hiện tại")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserService userService;
@@ -29,7 +33,7 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(Authentication authentication) {
         UserProfileResponse data = userService.getCurrentUserProfile(authentication);
-        ApiResponse<UserProfileResponse> response = ApiResponse.success("Lay thong tin user thanh cong", data);
+        ApiResponse<UserProfileResponse> response = ApiResponse.success("Lấy thông tin người dùng thành công", data);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -39,7 +43,7 @@ public class UserController {
             @Valid @RequestBody UserProfileUpdateRequest request
     ) {
         UserProfileResponse data = userService.updateCurrentUserProfile(authentication, request);
-        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cap nhat thong tin user thanh cong", data);
+        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cập nhật thông tin người dùng thành công", data);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -49,7 +53,7 @@ public class UserController {
             @Valid @RequestBody UserAvatarUpdateRequest request
     ) {
         UserProfileResponse data = userService.updateCurrentUserAvatar(authentication, request.getAvatar());
-        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cap nhat anh dai dien thanh cong", data);
+        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cập nhật ảnh đại diện thành công", data);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -59,7 +63,7 @@ public class UserController {
             @RequestPart("file") MultipartFile file
     ) {
         UserProfileResponse data = userService.updateCurrentUserAvatar(authentication, file);
-        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cap nhat anh dai dien thanh cong", data);
+        ApiResponse<UserProfileResponse> response = ApiResponse.success("Cập nhật ảnh đại diện thành công", data);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

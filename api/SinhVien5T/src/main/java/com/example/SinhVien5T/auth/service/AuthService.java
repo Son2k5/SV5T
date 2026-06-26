@@ -208,7 +208,7 @@ public class AuthService {
             Map<String, Object> body = new HashMap<>();
             body.put("accessToken", accessToken);
             body.put("user", Map.of(
-                    "id", user.getId(), // Nên trả về ID để Frontend dùng
+                    "publicId", user.getPublicId(),
                     "email", user.getEmail(),
                     "role", user.getRole()
             ));

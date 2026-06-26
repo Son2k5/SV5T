@@ -33,8 +33,8 @@ import java.util.UUID;
                         columnNames = "public_id"
                 ),
                 @UniqueConstraint(
-                        name = "uk_application_record_user_campaign",
-                        columnNames = {"user_id", "campaign_id"}
+                        name = "uk_application_record_user_campaign_type_level",
+                        columnNames = {"user_id", "campaign_id", "is_group", "level"}
                 )
         }
 )
@@ -66,6 +66,14 @@ public class ApplicationRecord {
 
     @Column(columnDefinition = "TEXT")
     private String note;
+
+    @Column(name = "is_group")
+    @Builder.Default
+    private Boolean isGroup = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "level", length = 30)
+    private Level level;
 
     @OneToMany(mappedBy = "applicationRecord", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

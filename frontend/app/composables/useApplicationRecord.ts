@@ -23,42 +23,51 @@ export const useApplicationRecordApi = () => {
     })
   }
 
-  const getCurrentCampaign = (level: CampaignLevel) => {
+  const getCurrentCampaign = (level: CampaignLevel, isGroup?: boolean) => {
     return authFetch<ApiResponse<CampaignSummaryResponse>>(`${baseUrl}/user/campaign/current`, {
       method: 'GET',
-      query: { level },
+      query: isGroup !== undefined ? { level, isGroup } : { level },
     })
   }
 
-  const getMyApplicationRecord = (campaignPublicId: string) => {
+  const getMyApplicationRecord = (campaignPublicId: string, isGroup?: boolean, level?: CampaignLevel) => {
     return authFetch<ApiResponse<ApplicationRecordResponse>>(
       `${baseUrl}/user/application-records/campaigns/${campaignPublicId}/me`,
       {
         method: 'GET',
+        query: {
+          ...(isGroup !== undefined ? { isGroup } : {}),
+          ...(level ? { level } : {}),
+        },
       },
     )
   }
 
-  const getCampaignCriteriaTree = (campaignPublicId: string) => {
+  const getCampaignCriteriaTree = (campaignPublicId: string, isGroup?: boolean, level?: CampaignLevel) => {
     return authFetch<ApiResponse<StandardDTO[]>>(
       `${baseUrl}/user/campaign/${campaignPublicId}/criteria-tree`,
       {
         method: 'GET',
+        query: {
+          ...(isGroup !== undefined ? { isGroup } : {}),
+          ...(level ? { level } : {}),
+        },
       },
     )
   }
 
-  const saveEvidence = (campaignPublicId: string, body: SaveEvidenceRequest) => {
+  const saveEvidence = (campaignPublicId: string, body: SaveEvidenceRequest, isGroup?: boolean) => {
     return authFetch<ApiResponse<void>>(
       `${baseUrl}/user/application-records/campaigns/${campaignPublicId}/evidences`,
       {
         method: 'POST',
+        query: isGroup !== undefined ? { isGroup } : {},
         body,
       },
     )
   }
 
-  const saveEvidenceFile = (campaignPublicId: string, criteriaId: number, file: File) => {
+  const saveEvidenceFile = (campaignPublicId: string, criteriaPublicId: string, file: File, isGroup?: boolean) => {
     const formData = new FormData()
     formData.append('file', file)
 
@@ -66,17 +75,21 @@ export const useApplicationRecordApi = () => {
       `${baseUrl}/user/application-records/campaigns/${campaignPublicId}/evidences`,
       {
         method: 'POST',
-        query: { criteriaId },
+        query: { criteriaPublicId, isGroup: isGroup ?? false },
         body: formData,
       },
     )
   }
 
-  const submitApplicationRecord = (campaignPublicId: string) => {
+  const submitApplicationRecord = (campaignPublicId: string, isGroup?: boolean, level?: CampaignLevel) => {
     return authFetch<ApiResponse<ApplicationRecordResponse>>(
       `${baseUrl}/user/application-records/campaigns/${campaignPublicId}/submit`,
       {
         method: 'PATCH',
+        query: {
+          ...(isGroup !== undefined ? { isGroup } : {}),
+          ...(level ? { level } : {}),
+        },
       },
     )
   }

@@ -20,13 +20,13 @@ const standards = ref<StandardDTO[]>([])
 const loading = ref(true)
 const error = ref('')
 const message = ref('')
-const savingId = ref<number | null>(null)
+const savingId = ref<string | null>(null)
 const submitting = ref(false)
 
 const mode = computed<EvidenceMode>(() => route.query.mode === 'group' ? 'group' : 'individual')
 const level = computed<CampaignLevel>(() => {
   const value = String(route.query.level || applicationRecord.value?.level || 'UNIVERSITY')
-  return ['UNIVERSITY', 'CITY', 'NATION'].includes(value) ? value as CampaignLevel : 'UNIVERSITY'
+  return ['UNIVERSITY', 'CITY', 'NATION', 'UNI_CITY', 'UNI_NATION', 'CITY_NATION', 'ALL'].includes(value) ? value as CampaignLevel : 'UNIVERSITY'
 })
 
 const modeLabel = computed(() => mode.value === 'group' ? 'Danh hiệu tập thể' : 'Danh hiệu cá nhân')
@@ -36,6 +36,14 @@ const levelLabel = computed(() => {
       return 'Cấp thành phố'
     case 'NATION':
       return 'Cấp trung ương'
+    case 'UNI_CITY':
+      return 'Trường & Thành phố'
+    case 'UNI_NATION':
+      return 'Trường & Trung ương'
+    case 'CITY_NATION':
+      return 'Thành phố & Trung ương'
+    case 'ALL':
+      return 'Cả ba cấp'
     default:
       return 'Cấp trường'
   }
@@ -49,8 +57,8 @@ async function loadData() {
 
   try {
     const [recordRes, criteriaRes] = await Promise.all([
-      getMyApplicationRecord(campaignPublicId),
-      getCampaignCriteriaTree(campaignPublicId),
+      getMyApplicationRecord(campaignPublicId, mode.value === 'group', level.value),
+      getCampaignCriteriaTree(campaignPublicId, mode.value === 'group', level.value),
     ])
 
     applicationRecord.value = recordRes.data
@@ -64,15 +72,15 @@ async function loadData() {
   }
 }
 
-async function handleSave(criteriaId: number, evidenceUrl: string) {
+async function handleSave(criteriaPublicId: string, evidenceUrl: string) {
   error.value = ''
   message.value = ''
 
   try {
-    savingId.value = criteriaId
+    savingId.value = criteriaPublicId
 
     await saveEvidence(campaignPublicId, {
-      criteriaId,
+      criteriaPublicId,
       evidenceUrl,
     })
 
@@ -87,14 +95,14 @@ async function handleSave(criteriaId: number, evidenceUrl: string) {
   }
 }
 
-async function handleSaveFile(criteriaId: number, file: File) {
+async function handleSaveFile(criteriaPublicId: string, file: File) {
   error.value = ''
   message.value = ''
 
   try {
-    savingId.value = criteriaId
+    savingId.value = criteriaPublicId
 
-    await saveEvidenceFile(campaignPublicId, criteriaId, file)
+    await saveEvidenceFile(campaignPublicId, criteriaPublicId, file)
 
     message.value = 'Upload minh chứng thành công.'
     await loadData()
@@ -114,7 +122,7 @@ async function handleSubmit() {
   try {
     submitting.value = true
 
-    const res = await submitApplicationRecord(campaignPublicId)
+    const res = await submitApplicationRecord(campaignPublicId, mode.value === 'group', level.value)
     applicationRecord.value = res.data
     message.value = 'Nộp hồ sơ minh chứng thành công.'
   }
@@ -152,42 +160,69 @@ await loadData()
 
       <div class="mt-6 grid gap-3 md:grid-cols-3">
         <div class="rounded-lg border border-[#E5E7EB] bg-white p-4">
-          <p class="text-sm font-bold text-[#64748B]">1. Chọn chế độ</p>
-          <p class="mt-1 font-black text-[#1E293B]">{{ modeLabel }}</p>
+          <p class="text-sm font-bold text-[#64748B]">
+            1. Chọn chế độ
+          </p>
+          <p class="mt-1 font-black text-[#1E293B]">
+            {{ modeLabel }}
+          </p>
         </div>
         <div class="rounded-lg border border-[#E5E7EB] bg-white p-4">
-          <p class="text-sm font-bold text-[#64748B]">2. Nộp minh chứng</p>
-          <p class="mt-1 font-black text-[#1E293B]">Theo từng tiêu chí</p>
+          <p class="text-sm font-bold text-[#64748B]">
+            2. Nộp minh chứng
+          </p>
+          <p class="mt-1 font-black text-[#1E293B]">
+            Theo từng tiêu chí
+          </p>
         </div>
         <div class="rounded-lg border border-[#E5E7EB] bg-white p-4">
-          <p class="text-sm font-bold text-[#64748B]">3. Gửi xét duyệt</p>
-          <p class="mt-1 font-black text-[#1E293B]">Hoàn tất hồ sơ</p>
+          <p class="text-sm font-bold text-[#64748B]">
+            3. Gửi xét duyệt
+          </p>
+          <p class="mt-1 font-black text-[#1E293B]">
+            Hoàn tất hồ sơ
+          </p>
         </div>
       </div>
 
-      <div v-if="loading" class="mt-6 rounded-lg border border-[#E5E7EB] bg-white p-8 text-[#64748B] shadow-sm">
+      <div
+        v-if="loading"
+        class="mt-6 rounded-lg border border-[#E5E7EB] bg-white p-8 text-[#64748B] shadow-sm"
+      >
         Đang tải dữ liệu minh chứng...
       </div>
 
-      <div v-else-if="error" class="mt-6 rounded-lg border border-red-100 bg-red-50 p-5 text-red-600">
+      <div
+        v-else-if="error"
+        class="mt-6 rounded-lg border border-red-100 bg-red-50 p-5 text-red-600"
+      >
         {{ error }}
       </div>
 
-      <div v-else-if="!standards.length" class="mt-6 rounded-lg border border-[#E5E7EB] bg-white p-8 text-[#64748B] shadow-sm">
+      <div
+        v-else-if="!standards.length"
+        class="mt-6 rounded-lg border border-[#E5E7EB] bg-white p-8 text-[#64748B] shadow-sm"
+      >
         Chưa có tiêu chí nào trong đợt xét chọn này.
       </div>
 
-      <div v-else class="mt-6 space-y-5">
+      <div
+        v-else
+        class="mt-6 space-y-5"
+      >
         <div
           v-for="standard in standards"
-          :key="standard.id"
+          :key="standard.publicId"
           class="rounded-lg border border-[#E5E7EB] bg-white p-5 shadow-sm"
         >
           <div class="mb-5">
             <h2 class="text-xl font-black text-[#1E293B]">
               {{ standard.name }}
             </h2>
-            <p v-if="standard.description" class="mt-1 text-sm leading-6 text-[#64748B]">
+            <p
+              v-if="standard.description"
+              class="mt-1 text-sm leading-6 text-[#64748B]"
+            >
               {{ standard.description }}
             </p>
           </div>
@@ -195,17 +230,20 @@ await loadData()
           <div class="space-y-4">
             <EvidenceCard
               v-for="criteria in standard.criteriaDTOList"
-              :key="criteria.id"
+              :key="criteria.publicId"
               :criteria="criteria"
               :disabled="isReadonly"
-              :loading="savingId === criteria.id"
+              :loading="savingId === criteria.publicId"
               @save="handleSave"
               @save-file="handleSaveFile"
             />
           </div>
         </div>
 
-        <p v-if="message" class="rounded-lg bg-emerald-50 p-4 text-sm font-black text-emerald-700">
+        <p
+          v-if="message"
+          class="rounded-lg bg-emerald-50 p-4 text-sm font-black text-emerald-700"
+        >
           {{ message }}
         </p>
 

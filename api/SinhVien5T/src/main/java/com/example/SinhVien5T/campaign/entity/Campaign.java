@@ -19,7 +19,8 @@ import java.util.UUID;
                 @Index(name = "idx_campaign_status", columnList = "campaign_status"),
                 @Index(name = "idx_campaign_level", columnList = "level"),
                 @Index(name = "idx_campaign_academic_year", columnList = "academic_year"),
-                @Index(name = "idx_campaign_status_level_year", columnList = "campaign_status, level, academic_year")
+                @Index(name = "idx_campaign_status_level_year", columnList = "campaign_status, level, academic_year"),
+                @Index(name = "idx_campaign_is_group", columnList = "is_group")
         }
 )
 @NoArgsConstructor
@@ -40,10 +41,13 @@ public class Campaign {
     @Column(nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "academic_year", nullable = false)
     private Long academicYear;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Enumerated(EnumType.STRING)
     private Level level;
 
@@ -58,6 +62,10 @@ public class Campaign {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Builder.Default
+    @Column(name = "is_group", nullable = false)
+    @Convert(converter = CampaignTypeConverter.class)
+    private CampaignType isGroup = CampaignType.INDIVIDUAL;
 
     @CreationTimestamp
     @Column(name = "create_at", updatable = false)

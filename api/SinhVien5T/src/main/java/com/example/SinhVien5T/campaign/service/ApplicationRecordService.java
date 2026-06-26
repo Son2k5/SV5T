@@ -5,6 +5,7 @@ import com.example.SinhVien5T.campaign.dto.CreateApplicationRecordRequest;
 import com.example.SinhVien5T.campaign.dto.SaveEvidenceRequest;
 import com.example.SinhVien5T.campaign.entity.ApplicationRecord;
 import com.example.SinhVien5T.campaign.entity.ApplicationStatus;
+import com.example.SinhVien5T.campaign.entity.Level;
 import com.example.SinhVien5T.campaign.exception.DuplicateApplicationRecordException;
 import com.example.SinhVien5T.campaign.exception.InvalidApplicationRecordStateException;
 import com.example.SinhVien5T.campaign.repository.ApplicationRecordRepository;
@@ -59,11 +60,11 @@ public class ApplicationRecordService {
     @Caching(
             put = @CachePut(
                     cacheNames = CacheConfig.APPLICATION_RECORD_MINE,
-                    key = "#request.campaignPublicId + ':' + #authentication.principal.id"
+                    key = "#request.campaignPublicId + ':' + (#request.isGroup != null ? #request.isGroup : false) + ':' + (#request.level != null ? #request.level.trim().toUpperCase() : 'UNIVERSITY') + ':' + #authentication.principal.id"
             ),
             evict = @CacheEvict(
                     cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
-                    key = "#request.campaignPublicId + ':' + #authentication.principal.id"
+                    key = "#request.campaignPublicId + ':' + (#request.isGroup != null ? #request.isGroup : false) + ':' + (#request.level != null ? #request.level.trim().toUpperCase() : 'UNIVERSITY') + ':' + #authentication.principal.id"
             )
     )
     @Transactional
@@ -76,11 +77,26 @@ public class ApplicationRecordService {
         Campaign campaign = campaignRepository.findByPublicId(request.getCampaignPublicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
 
-        if (applicationRecordRepository.existsByUserIdAndCampaignId(
+        Level recordLevel = null;
+        if (request.getLevel() != null && !request.getLevel().isBlank()) {
+            try {
+                recordLevel = Level.valueOf(request.getLevel().trim().toUpperCase());
+            } catch (Exception e) {
+                // ignore, defaults below
+            }
+        }
+        if (recordLevel == null) {
+            recordLevel = campaign.getLevel().getDefaultLevel();
+        }
+
+        Boolean isGroup = request.getIsGroup() != null && request.getIsGroup();
+        if (applicationRecordRepository.existsByUserIdAndCampaignIdAndIsGroupAndLevel(
                 currentUser.getId(),
-                campaign.getId()
+                campaign.getId(),
+                isGroup,
+                recordLevel
         )) {
-            throw new DuplicateApplicationRecordException("Bạn đã đăng ký hồ sơ cho đợt xét chọn này");
+            throw new DuplicateApplicationRecordException("Bạn đã đăng ký hồ sơ cho cấp này trong đợt xét chọn");
         }
 
         User user = userRepository.findById(currentUser.getId())
@@ -91,6 +107,8 @@ public class ApplicationRecordService {
                 .campaign(campaign)
                 .status(ApplicationStatus.DRAFT)
                 .note(request.getNote())
+                .isGroup(isGroup)
+                .level(recordLevel)
                 .build();
 
         return toResponse(applicationRecordRepository.save(record));
@@ -98,37 +116,41 @@ public class ApplicationRecordService {
 
     @Cacheable(
             cacheNames = CacheConfig.APPLICATION_RECORD_MINE,
-            key = "#campaignPublicId + ':' + #authentication.principal.id",
+            key = "#campaignPublicId + ':' + (#isGroup != null ? #isGroup : false) + ':' + (#level != null ? #level.name() : 'UNIVERSITY') + ':' + #authentication.principal.id",
             sync = true
     )
     @Transactional(readOnly = true)
     public ApplicationRecordResponse getMine(
             String campaignPublicId,
+            Boolean isGroup,
+            Level level,
             Authentication authentication
     ) {
         CustomUserDetails currentUser = getCurrentUser(authentication);
 
+        Level targetLevel = level;
+        if (targetLevel == null) {
+            Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
+            targetLevel = campaign.getLevel().getDefaultLevel();
+        }
+
         ApplicationRecord record = applicationRecordRepository
-                .findByUserIdAndCampaignPublicId(currentUser.getId(), campaignPublicId)
+                .findByUserIdAndCampaignPublicIdAndIsGroupAndLevel(currentUser.getId(), campaignPublicId, isGroup != null ? isGroup : false, targetLevel)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ"));
 
         return toResponse(record);
     }
 
     @Caching(evict = {
-            @CacheEvict(
-                    cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            ),
-            @CacheEvict(
-                    cacheNames = CacheConfig.APPLICATION_RECORD_MINE,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            )
+            @CacheEvict(cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER, allEntries = true),
+            @CacheEvict(cacheNames = CacheConfig.APPLICATION_RECORD_MINE, allEntries = true)
     })
     @Transactional
     public void saveEvidence(
             String campaignPublicId,
             SaveEvidenceRequest request,
+            Boolean isGroup,
             Authentication authentication
     ) {
         CustomUserDetails currentUser = getCurrentUser(authentication);
@@ -136,20 +158,25 @@ public class ApplicationRecordService {
         Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
 
+        Criteria criteria = criteriaRepository
+                .findByPublicIdAndStandardCampaignId(request.getCriteriaPublicId(), campaign.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tiêu chí không thuộc đợt xét chọn này"));
+
+        Level targetLevel = criteria.getStandard().getLevel();
+        if (targetLevel == null) {
+            targetLevel = campaign.getLevel().getDefaultLevel();
+        }
+
         ApplicationRecord record = applicationRecordRepository
-                .findByUserIdAndCampaignId(currentUser.getId(), campaign.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa đăng ký hồ sơ cho đợt xét chọn này"));
+                .findByUserIdAndCampaignIdAndIsGroupAndLevel(currentUser.getId(), campaign.getId(), isGroup != null ? isGroup : false, targetLevel)
+                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa đăng ký hồ sơ cho cấp này trong đợt xét chọn"));
 
         if (record.getStatus() != ApplicationStatus.DRAFT) {
             throw new InvalidApplicationRecordStateException("Hồ sơ đã nộp, không thể sửa minh chứng");
         }
 
-        Criteria criteria = criteriaRepository
-                .findByIdAndStandardCampaignId(request.getCriteriaId(), campaign.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Tiêu chí không thuộc đợt xét chọn này"));
-
         Evidence evidence = evidenceRepository
-                .findByApplicationRecordIdAndCriteriaId(record.getId(), request.getCriteriaId())
+                .findByApplicationRecordIdAndCriteriaId(record.getId(), criteria.getId())
                 .orElseGet(Evidence::new);
 
         evidence.setApplicationRecord(record);
@@ -189,20 +216,15 @@ public class ApplicationRecordService {
     }
 
     @Caching(evict = {
-            @CacheEvict(
-                    cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            ),
-            @CacheEvict(
-                    cacheNames = CacheConfig.APPLICATION_RECORD_MINE,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            )
+            @CacheEvict(cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER, allEntries = true),
+            @CacheEvict(cacheNames = CacheConfig.APPLICATION_RECORD_MINE, allEntries = true)
     })
     @Transactional
     public void saveEvidenceFile(
             String campaignPublicId,
-            Long criteriaId,
+            String criteriaPublicId,
             MultipartFile file,
+            Boolean isGroup,
             Authentication authentication
     ) {
         CustomUserDetails currentUser = getCurrentUser(authentication);
@@ -210,22 +232,27 @@ public class ApplicationRecordService {
         Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
 
+        Criteria criteria = criteriaRepository
+                .findByPublicIdAndStandardCampaignId(criteriaPublicId, campaign.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tiêu chí không thuộc đợt xét chọn này"));
+
+        Level targetLevel = criteria.getStandard().getLevel();
+        if (targetLevel == null) {
+            targetLevel = campaign.getLevel().getDefaultLevel();
+        }
+
         ApplicationRecord record = applicationRecordRepository
-                .findByUserIdAndCampaignId(currentUser.getId(), campaign.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa đăng ký hồ sơ cho đợt xét chọn này"));
+                .findByUserIdAndCampaignIdAndIsGroupAndLevel(currentUser.getId(), campaign.getId(), isGroup != null ? isGroup : false, targetLevel)
+                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa đăng ký hồ sơ cho cấp này trong đợt xét chọn"));
 
         if (record.getStatus() != ApplicationStatus.DRAFT) {
             throw new InvalidApplicationRecordStateException("Hồ sơ đã nộp, không thể sửa minh chứng");
         }
 
-        Criteria criteria = criteriaRepository
-                .findByIdAndStandardCampaignId(criteriaId, campaign.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Tiêu chí không thuộc đợt xét chọn này"));
-
         validateExpectedEvidenceType(criteria, evidenceTypeForFile(file));
 
         Evidence evidence = evidenceRepository
-                .findByApplicationRecordIdAndCriteriaId(record.getId(), criteriaId)
+                .findByApplicationRecordIdAndCriteriaId(record.getId(), criteria.getId())
                 .orElseGet(Evidence::new);
 
         String oldPublicId = evidence.getEvidencePublicId();
@@ -249,25 +276,28 @@ public class ApplicationRecordService {
         assetCleanupScheduler.deleteAfterCommit(oldPublicId, oldResourceType);
     }
 
-    @Caching(
-            put = @CachePut(
-                    cacheNames = CacheConfig.APPLICATION_RECORD_MINE,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            ),
-            evict = @CacheEvict(
-                    cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER,
-                    key = "#campaignPublicId + ':' + #authentication.principal.id"
-            )
-    )
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConfig.CAMPAIGN_CRITERIA_USER, allEntries = true),
+            @CacheEvict(cacheNames = CacheConfig.APPLICATION_RECORD_MINE, allEntries = true)
+    })
     @Transactional
     public ApplicationRecordResponse submit(
             String campaignPublicId,
+            Boolean isGroup,
+            Level level,
             Authentication authentication
     ) {
         CustomUserDetails currentUser = getCurrentUser(authentication);
 
+        Level targetLevel = level;
+        if (targetLevel == null) {
+            Campaign campaign = campaignRepository.findByPublicId(campaignPublicId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt xét chọn"));
+            targetLevel = campaign.getLevel().getDefaultLevel();
+        }
+
         ApplicationRecord record = applicationRecordRepository
-                .findByUserIdAndCampaignPublicId(currentUser.getId(), campaignPublicId)
+                .findByUserIdAndCampaignPublicIdAndIsGroupAndLevel(currentUser.getId(), campaignPublicId, isGroup != null ? isGroup : false, targetLevel)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ"));
 
         if (record.getStatus() != ApplicationStatus.DRAFT) {
@@ -293,9 +323,10 @@ public class ApplicationRecordService {
                 .publicId(record.getPublicId())
                 .campaignPublicId(record.getCampaign().getPublicId())
                 .campaignName(record.getCampaign().getName())
-                .level(record.getCampaign().getLevel().name())
+                .level(record.getLevel() != null ? record.getLevel().name() : record.getCampaign().getLevel().name())
                 .status(record.getStatus().name())
                 .note(record.getNote())
+                .isGroup(record.getIsGroup())
                 .createdAt(record.getCreatedAt())
                 .updatedAt(record.getUpdatedAt())
                 .build();
@@ -311,7 +342,10 @@ public class ApplicationRecordService {
 
     private void validateSubmission(ApplicationRecord record) {
         List<Criteria> criteriaList = criteriaRepository
-                .findAllByCampaignIdWithStandardAndParent(record.getCampaign().getId());
+                .findAllByCampaignIdAndIsGroupWithStandardAndParent(
+                        record.getCampaign().getId(),
+                        record.getIsGroup() != null ? record.getIsGroup() : false
+                );
         Map<Long, Evidence> evidenceByCriteriaId = evidenceRepository.findByApplicationRecordId(record.getId())
                 .stream()
                 .collect(Collectors.toMap(
@@ -329,7 +363,7 @@ public class ApplicationRecordService {
                     && requiresEvidence(criteria)
                     && !hasSubmittedEvidence(criteria, evidenceByCriteriaId)) {
                 throw new InvalidApplicationRecordStateException(
-                        "Tieu chi bat buoc chua co minh chung: " + criteria.getName()
+                        "Tiêu chí bắt buộc chưa có minh chứng: " + criteria.getName()
                 );
             }
 
@@ -346,7 +380,7 @@ public class ApplicationRecordService {
                         .count();
                 if (satisfiedChildren < requiredChildrenCount) {
                     throw new InvalidApplicationRecordStateException(
-                            "Tieu chi chua du minh chung con: " + criteria.getName()
+                            "Tiêu chí chưa đủ minh chứng con: " + criteria.getName()
                     );
                 }
             }
@@ -407,16 +441,16 @@ public class ApplicationRecordService {
             return;
         }
         if (expectedType == EvidenceType.NONE) {
-            throw new IllegalArgumentException("Tieu chi nay khong yeu cau minh chung");
+            throw new IllegalArgumentException("Tiêu chí này không yêu cầu minh chứng");
         }
         if (expectedType != actualType) {
-            throw new IllegalArgumentException("Loai minh chung khong phu hop voi tieu chi");
+            throw new IllegalArgumentException("Loại minh chứng không phù hợp với tiêu chí");
         }
     }
 
     private void validateEvidenceUrl(String evidenceUrl) {
         if (evidenceUrl.length() > MAX_EVIDENCE_URL_LENGTH) {
-            throw new IllegalArgumentException("Link minh chung khong duoc vuot qua 1000 ky tu");
+            throw new IllegalArgumentException("Link minh chứng không được vượt quá 1000 ký tự");
         }
 
         try {
@@ -425,10 +459,10 @@ public class ApplicationRecordService {
                     ? ""
                     : uri.getScheme().toLowerCase(Locale.ROOT);
             if (!("http".equals(scheme) || "https".equals(scheme)) || uri.getHost() == null) {
-                throw new IllegalArgumentException("Link minh chung khong hop le");
+                throw new IllegalArgumentException("Link minh chứng không hợp lệ");
             }
         } catch (URISyntaxException ex) {
-            throw new IllegalArgumentException("Link minh chung khong hop le");
+            throw new IllegalArgumentException("Link minh chứng không hợp lệ");
         }
     }
 

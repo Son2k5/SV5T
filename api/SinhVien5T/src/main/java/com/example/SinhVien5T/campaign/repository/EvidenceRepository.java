@@ -27,6 +27,8 @@ public interface EvidenceRepository extends JpaRepository<Evidence, Long> {
             Long criteriaId
     );
 
+    Optional<Evidence> findByPublicId(String publicId);
+
     @EntityGraph(attributePaths = {"criteria", "applicationRecord"})
     List<Evidence> findByApplicationRecordIdAndEvidenceStatus(
             Long applicationRecordId,

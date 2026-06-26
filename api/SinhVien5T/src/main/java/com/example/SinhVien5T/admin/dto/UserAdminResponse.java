@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import com.example.SinhVien5T.user.entity.Role;
 
 public record UserAdminResponse(
-        Long id,
         String publicId,
         String email,
         Role role,

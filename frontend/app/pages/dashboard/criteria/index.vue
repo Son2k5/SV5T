@@ -170,9 +170,10 @@
       </div>
 
       <CriteriaCard
-        v-for="criteria in activeStandard.data.criteriaDTOList"
-        :key="criteria.id"
+        v-for="(criteria, index) in activeStandard.data.criteriaDTOList"
+        :key="criteria.publicId"
         :criteria="criteria"
+        :index="index + 1"
       />
     </div>
 
@@ -203,7 +204,7 @@ const activeStandard = computed(() => {
   return {
     label: activeStandardOption?.label,
     icon: activeStandardOption?.icon,
-    data: data.value.find(standard => standard.id === activeStandardOption?.id) ?? null,
+    data: data.value.find(standard => standard.name.trim().toLowerCase() === activeStandardOption?.label.trim().toLowerCase()) ?? null,
   }
 })
 

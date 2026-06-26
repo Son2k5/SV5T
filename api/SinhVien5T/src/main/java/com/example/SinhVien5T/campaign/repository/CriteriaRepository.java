@@ -19,7 +19,11 @@ public interface CriteriaRepository extends JpaRepository<Criteria, Long> {
 
     List<Criteria> findByEvidenceType(EvidenceType evidenceType);
 
+    Optional<Criteria> findByPublicId(String publicId);
+
     Optional<Criteria> findByIdAndStandardCampaignId(Long id, Long campaignId);
+
+    Optional<Criteria> findByPublicIdAndStandardCampaignId(String publicId, Long campaignId);
 
     @Query("""
             select c
@@ -29,4 +33,14 @@ public interface CriteriaRepository extends JpaRepository<Criteria, Long> {
             where s.campaign.id = :campaignId
             """)
     List<Criteria> findAllByCampaignIdWithStandardAndParent(@Param("campaignId") Long campaignId);
+
+    @Query("""
+            select c
+            from Criteria c
+            join fetch c.standard s
+            left join fetch c.parent
+            where s.campaign.id = :campaignId
+              and s.isGroup = :isGroup
+            """)
+    List<Criteria> findAllByCampaignIdAndIsGroupWithStandardAndParent(@Param("campaignId") Long campaignId, @Param("isGroup") Boolean isGroup);
 }

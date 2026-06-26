@@ -12,365 +12,365 @@
         :disabled="!isEditing"
         class="contents"
       >
-      <CommonPageSection
-        title="Thông tin Cá nhân"
-        title-icon="i-heroicons-user-solid"
-        inner-class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5"
-      >
-        <UFormField
-          label="Họ và tên"
-          name="fullName"
-          required
-          class="w-full md:col-span-2"
+        <CommonPageSection
+          title="Thông tin Cá nhân"
+          title-icon="i-heroicons-user-solid"
+          inner-class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5"
         >
-          <UInput
-            v-model="formState.fullName"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Giới tính"
-          name="gender"
-          required
-          class="w-full"
-        >
-          <USelect
-            v-model="formState.gender"
-            class="w-full"
-            :items="genderOptions"
-            color="info"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Ngày sinh"
-          name="birthDay"
-          required
-          class="w-full"
-        >
-          <UPopover class="w-full h-full">
-            <UButton
-              :label="formatDate(formState.birthDay) || 'Chọn ngày sinh'"
-              color="neutral"
-              class="w-full justify-between bg-white text-[#1E293B] ring ring-inset ring-accented hover:bg-neutral-100 disabled:cursor-default disabled:bg-white disabled:text-[#64748B] disabled:opacity-100 disabled:hover:bg-white"
-              trailing-icon="i-heroicons-calendar-solid"
+          <UFormField
+            label="Họ và tên"
+            name="fullName"
+            required
+            class="w-full md:col-span-2"
+          >
+            <UInput
+              v-model="formState.fullName"
+              class="w-full"
             />
-            <template #content>
-              <UCalendar
-                v-model="computedBirthDay"
+          </UFormField>
+
+          <UFormField
+            label="Giới tính"
+            name="gender"
+            required
+            class="w-full"
+          >
+            <USelect
+              v-model="formState.gender"
+              class="w-full"
+              :items="genderOptions"
+              color="info"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Ngày sinh"
+            name="birthDay"
+            required
+            class="w-full"
+          >
+            <UPopover class="w-full h-full">
+              <UButton
+                :label="formatDate(formState.birthDay) || 'Chọn ngày sinh'"
                 color="neutral"
+                class="w-full justify-between bg-white text-[#1E293B] ring ring-inset ring-accented hover:bg-neutral-100 disabled:cursor-default disabled:bg-white disabled:text-[#64748B] disabled:opacity-100 disabled:hover:bg-white"
+                trailing-icon="i-heroicons-calendar-solid"
               />
-            </template>
-          </UPopover>
-        </UFormField>
+              <template #content>
+                <UCalendar
+                  v-model="computedBirthDay"
+                  color="neutral"
+                />
+              </template>
+            </UPopover>
+          </UFormField>
 
-        <UFormField
-          label="Dân tộc"
-          name="ethnicity"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.ethnicity"
+          <UFormField
+            label="Dân tộc"
+            name="ethnicity"
+            required
             class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Số CCCD/CMND"
-          name="identityCardNumber"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.identityCardNumber"
-            class="w-full"
-          />
-        </UFormField>
-      </CommonPageSection>
-
-      <CommonPageSection
-        title="Thông tin Học tập"
-        title-icon="i-heroicons-book-open-solid"
-        inner-class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5"
-      >
-        <UFormField
-          label="Trường"
-          name="school"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.school"
-            disabled
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Khoa"
-          name="faculty"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.faculty"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Ngành"
-          name="major"
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.major"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Sinh viên năm"
-          name="academicYear"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model.number="formState.academicYear"
-            type="number"
-            min="1"
-            max="10"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Mã sinh viên"
-          name="studentCode"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.studentCode"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Lớp hành chính"
-          name="administrativeClass"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.administrativeClass"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Chức vụ hiện tại"
-          name="currentPosition"
-          required
-          class="w-full md:col-span-2"
-        >
-          <UInput
-            v-model="formState.currentPosition"
-            class="w-full"
-          />
-        </UFormField>
-      </CommonPageSection>
-
-      <CommonPageSection
-        title="Địa chỉ"
-        title-icon="i-heroicons-map-pin-solid"
-        inner-class="flex flex-col gap-5"
-      >
-        <div class="w-full rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-          <h3 class="mb-4 flex items-center gap-2 text-base font-bold text-[#1E293B]">
-            <UIcon
-              name="i-lucide-home"
-              class="size-5 text-[#3B82F6]"
+          >
+            <UInput
+              v-model="formState.ethnicity"
+              class="w-full"
             />
-            Địa chỉ thường trú
-          </h3>
-          <div class="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-            <UFormField
-              label="Tỉnh / Thành phố"
-              name="permanentAddress.provinceCity"
-              required
+          </UFormField>
+
+          <UFormField
+            label="Số CCCD/CMND"
+            name="identityCardNumber"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.identityCardNumber"
               class="w-full"
-            >
-              <USelect
-                v-model="formState.permanentAddress.provinceCity"
-                :items="provinces ?? []"
-                value-key="label"
-                class="w-full"
-              />
-            </UFormField>
+            />
+          </UFormField>
+        </CommonPageSection>
 
-            <UFormField
-              label="Quận / Huyện"
-              name="permanentAddress.district"
-              required
+        <CommonPageSection
+          title="Thông tin Học tập"
+          title-icon="i-heroicons-book-open-solid"
+          inner-class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5"
+        >
+          <UFormField
+            label="Trường"
+            name="school"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.school"
+              disabled
               class="w-full"
-            >
-              <UInput
-                v-model="formState.permanentAddress.district"
-                class="w-full"
-              />
-            </UFormField>
+            />
+          </UFormField>
 
-            <UFormField
-              label="Địa chỉ cụ thể"
-              name="permanentAddress.detailAddress"
-              required
-              class="w-full md:col-span-2"
-            >
-              <UTextarea
-                v-model="formState.permanentAddress.detailAddress"
-                class="w-full"
-                autoresize
-              />
-            </UFormField>
-          </div>
-        </div>
+          <UFormField
+            label="Khoa"
+            name="faculty"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.faculty"
+              class="w-full"
+            />
+          </UFormField>
 
-        <div class="w-full rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-          <div class="mb-4 flex items-center gap-3">
-            <h3 class="flex items-center gap-2 text-base font-bold text-[#1E293B]">
+          <UFormField
+            label="Ngành"
+            name="major"
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.major"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Sinh viên năm"
+            name="academicYear"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model.number="formState.academicYear"
+              type="number"
+              min="1"
+              max="10"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Mã sinh viên"
+            name="studentCode"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.studentCode"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Lớp hành chính"
+            name="administrativeClass"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.administrativeClass"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Chức vụ hiện tại"
+            name="currentPosition"
+            required
+            class="w-full md:col-span-2"
+          >
+            <UInput
+              v-model="formState.currentPosition"
+              class="w-full"
+            />
+          </UFormField>
+        </CommonPageSection>
+
+        <CommonPageSection
+          title="Địa chỉ"
+          title-icon="i-heroicons-map-pin-solid"
+          inner-class="flex flex-col gap-5"
+        >
+          <div class="w-full rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <h3 class="mb-4 flex items-center gap-2 text-base font-bold text-[#1E293B]">
               <UIcon
-                name="i-lucide-map-pin"
+                name="i-lucide-home"
                 class="size-5 text-[#3B82F6]"
               />
-              Địa chỉ tạm trú
+              Địa chỉ thường trú
             </h3>
-            <UButton
-              label="Giống thường trú"
-              variant="soft"
-              color="info"
-              size="sm"
-              class="ml-auto cursor-pointer"
-              @click="copyAddress"
+            <div class="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+              <UFormField
+                label="Tỉnh / Thành phố"
+                name="permanentAddress.provinceCity"
+                required
+                class="w-full"
+              >
+                <USelect
+                  v-model="formState.permanentAddress.provinceCity"
+                  :items="provinces ?? []"
+                  value-key="label"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Quận / Huyện"
+                name="permanentAddress.district"
+                required
+                class="w-full"
+              >
+                <UInput
+                  v-model="formState.permanentAddress.district"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Địa chỉ cụ thể"
+                name="permanentAddress.detailAddress"
+                required
+                class="w-full md:col-span-2"
+              >
+                <UTextarea
+                  v-model="formState.permanentAddress.detailAddress"
+                  class="w-full"
+                  autoresize
+                />
+              </UFormField>
+            </div>
+          </div>
+
+          <div class="w-full rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+            <div class="mb-4 flex items-center gap-3">
+              <h3 class="flex items-center gap-2 text-base font-bold text-[#1E293B]">
+                <UIcon
+                  name="i-lucide-map-pin"
+                  class="size-5 text-[#3B82F6]"
+                />
+                Địa chỉ tạm trú
+              </h3>
+              <UButton
+                label="Giống thường trú"
+                variant="soft"
+                color="info"
+                size="sm"
+                class="ml-auto cursor-pointer"
+                @click="copyAddress"
+              />
+            </div>
+            <div class="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+              <UFormField
+                label="Tỉnh / Thành phố"
+                name="temporaryAddress.provinceCity"
+                required
+                class="w-full"
+              >
+                <USelect
+                  v-model="formState.temporaryAddress.provinceCity"
+                  :items="provinces ?? []"
+                  value-key="label"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Quận / Huyện"
+                name="temporaryAddress.district"
+                required
+                class="w-full"
+              >
+                <UInput
+                  v-model="formState.temporaryAddress.district"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Địa chỉ cụ thể"
+                name="temporaryAddress.detailAddress"
+                required
+                class="w-full md:col-span-2"
+              >
+                <UTextarea
+                  v-model="formState.temporaryAddress.detailAddress"
+                  class="w-full"
+                  autoresize
+                />
+              </UFormField>
+            </div>
+          </div>
+        </CommonPageSection>
+
+        <CommonPageSection
+          title="Thông tin Liên hệ"
+          title-icon="i-heroicons-phone-solid"
+          inner-class="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <UFormField
+            label="Số điện thoại"
+            name="phoneNumber"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.phoneNumber"
+              class="w-full"
             />
-          </div>
-          <div class="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-            <UFormField
-              label="Tỉnh / Thành phố"
-              name="temporaryAddress.provinceCity"
-              required
+          </UFormField>
+
+          <UFormField
+            label="Email liên hệ"
+            name="contactEmail"
+            required
+            class="w-full"
+          >
+            <UInput
+              v-model="formState.contactEmail"
               class="w-full"
-            >
-              <USelect
-                v-model="formState.temporaryAddress.provinceCity"
-                :items="provinces ?? []"
-                value-key="label"
-                class="w-full"
-              />
-            </UFormField>
+            />
+          </UFormField>
 
-            <UFormField
-              label="Quận / Huyện"
-              name="temporaryAddress.district"
-              required
+          <UFormField
+            label="Email tài khoản"
+            name="email"
+            class="w-full md:col-span-2"
+          >
+            <UInput
+              :model-value="profile?.email ?? ''"
               class="w-full"
-            >
-              <UInput
-                v-model="formState.temporaryAddress.district"
-                class="w-full"
-              />
-            </UFormField>
+              disabled
+            />
+          </UFormField>
+        </CommonPageSection>
 
-            <UFormField
-              label="Địa chỉ cụ thể"
-              name="temporaryAddress.detailAddress"
-              required
-              class="w-full md:col-span-2"
-            >
-              <UTextarea
-                v-model="formState.temporaryAddress.detailAddress"
-                class="w-full"
-                autoresize
-              />
-            </UFormField>
-          </div>
-        </div>
-      </CommonPageSection>
-
-      <CommonPageSection
-        title="Thông tin Liên hệ"
-        title-icon="i-heroicons-phone-solid"
-        inner-class="grid grid-cols-1 md:grid-cols-2 gap-6"
-      >
-        <UFormField
-          label="Số điện thoại"
-          name="phoneNumber"
-          required
-          class="w-full"
+        <CommonPageSection
+          title="Thông tin Liên quan"
+          title-icon="i-heroicons-cube-solid"
+          inner-class="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          <UInput
-            v-model="formState.phoneNumber"
+          <UFormField
+            label="Chức vụ Đoàn hội"
+            name="unionPosition"
             class="w-full"
-          />
-        </UFormField>
+          >
+            <UInput
+              v-model="formState.unionPosition"
+              class="w-full"
+            />
+          </UFormField>
 
-        <UFormField
-          label="Email liên hệ"
-          name="contactEmail"
-          required
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.contactEmail"
+          <UFormField
+            label="Đảng viên / Đoàn viên"
+            name="politicalStatus"
+            required
             class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Email tài khoản"
-          name="email"
-          class="w-full md:col-span-2"
-        >
-          <UInput
-            :model-value="profile?.email ?? ''"
-            class="w-full"
-            disabled
-          />
-        </UFormField>
-      </CommonPageSection>
-
-      <CommonPageSection
-        title="Thông tin Liên quan"
-        title-icon="i-heroicons-cube-solid"
-        inner-class="grid grid-cols-1 md:grid-cols-2 gap-6"
-      >
-        <UFormField
-          label="Chức vụ Đoàn hội"
-          name="unionPosition"
-          class="w-full"
-        >
-          <UInput
-            v-model="formState.unionPosition"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Đảng viên / Đoàn viên"
-          name="politicalStatus"
-          required
-          class="w-full"
-        >
-          <USelect
-            v-model="formState.politicalStatus"
-            :items="politicalStatusOptions"
-            class="w-full"
-            color="info"
-          />
-        </UFormField>
-      </CommonPageSection>
+          >
+            <USelect
+              v-model="formState.politicalStatus"
+              :items="politicalStatusOptions"
+              class="w-full"
+              color="info"
+            />
+          </UFormField>
+        </CommonPageSection>
       </fieldset>
 
       <div class="sticky bottom-4 z-10 flex justify-end gap-3 rounded-2xl">
@@ -528,16 +528,16 @@ const schema = z.object({
   faculty: z.string().trim().min(1, 'Khoa là bắt buộc').max(150),
   currentPosition: z.string().trim().min(1, 'Chức vụ hiện tại là bắt buộc').max(100),
   permanentAddress: z.object({
-    provinceCity: z.string().trim().min(1, 'Tỉnh/thành phố là bắt buộc').max(100),
-    district: z.string().trim().min(1, 'Quận/huyện là bắt buộc').max(100),
-    detailAddress: z.string().trim().min(1, 'Địa chỉ cụ thể là bắt buộc').max(255),
+    provinceCity: z.string().trim().min(1, 'Tỉnh/thành phố là bắt buộc').max(100, 'Tỉnh/thành phố không được vượt quá 100 ký tự'),
+    district: z.string().trim().min(1, 'Quận/huyện là bắt buộc').max(100, 'Quận/huyện không được vượt quá 100 ký tự'),
+    detailAddress: z.string().trim().min(1, 'Địa chỉ cụ thể là bắt buộc').max(500, 'Địa chỉ cụ thể không được vượt quá 500 ký tự'),
   }),
   temporaryAddress: z.object({
-    provinceCity: z.string().trim().min(1, 'Tỉnh/thành phố là bắt buộc').max(100),
-    district: z.string().trim().min(1, 'Quận/huyện là bắt buộc').max(100),
-    detailAddress: z.string().trim().min(1, 'Địa chỉ cụ thể là bắt buộc').max(255),
+    provinceCity: z.string().trim().min(1, 'Tỉnh/thành phố là bắt buộc').max(100, 'Tỉnh/thành phố không được vượt quá 100 ký tự'),
+    district: z.string().trim().min(1, 'Quận/huyện là bắt buộc').max(100, 'Quận/huyện không được vượt quá 100 ký tự'),
+    detailAddress: z.string().trim().min(1, 'Địa chỉ cụ thể là bắt buộc').max(500, 'Địa chỉ cụ thể không được vượt quá 500 ký tự'),
   }),
-  contactEmail: z.string().trim().min(1, 'Email liên hệ là bắt buộc').email('Email liên hệ không hợp lệ').max(100),
+  contactEmail: z.string().trim().min(1, 'Email liên hệ là bắt buộc').email('Email liên hệ không hợp lệ').max(100, 'Email liên hệ không được vượt quá 100 ký tự'),
   phoneNumber: z.string().regex(/^[0-9+\-\s]{8,20}$/, 'Số điện thoại không hợp lệ'),
   unionPosition: z.string().trim().max(100, 'Chức vụ đoàn hội không được vượt quá 100 ký tự'),
   politicalStatus: z.enum(['NONE', 'UNION_MEMBER', 'PARTY_MEMBER']),

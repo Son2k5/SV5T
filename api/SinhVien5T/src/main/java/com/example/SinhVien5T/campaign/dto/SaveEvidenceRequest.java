@@ -10,8 +10,8 @@ import lombok.Setter;
 @Setter
 public class SaveEvidenceRequest {
 
-    @NotNull(message = "Tiêu chí không được để trống")
-    private Long criteriaId;
+    @NotBlank(message = "Tiêu chí không được để trống")
+    private String criteriaPublicId;
 
     @NotBlank(message = "Minh chứng không được để trống")
     @Size(max = 7_000_000, message = "Minh chứng không được vượt quá 5MB")
