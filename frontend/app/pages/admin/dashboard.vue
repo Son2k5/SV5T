@@ -21,7 +21,7 @@
         <span>{{ error }}</span>
       </div>
       <UButton
-        color="rose"
+        color="error"
         variant="subtle"
         label="Thử lại"
         icon="i-lucide-refresh-cw"
@@ -227,7 +227,7 @@ const load = async () => {
     toast.add({
       title: 'Lỗi tải dữ liệu',
       description: error.value,
-      color: 'danger',
+      color: 'error',
     })
   }
   finally {
@@ -288,7 +288,7 @@ const exportData = () => {
     toast.add({
       title: 'Lỗi xuất báo cáo',
       description: 'Không thể xuất dữ liệu dạng CSV.',
-      color: 'danger',
+      color: 'error',
     })
   }
 }

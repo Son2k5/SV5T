@@ -54,6 +54,9 @@ import com.example.SinhVien5T.common.entity.SystemSetting;
 import com.example.SinhVien5T.common.entity.UserPermission;
 import com.example.SinhVien5T.common.exception.ResourceNotFoundException;
 import com.example.SinhVien5T.common.security.CachedUserPrincipalService;
+import com.example.SinhVien5T.notification.dto.NotificationEvent;
+import com.example.SinhVien5T.notification.entity.NotificationType;
+import com.example.SinhVien5T.notification.service.NotificationEventPublisher;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import com.example.SinhVien5T.user.entity.Role;
 import com.example.SinhVien5T.user.entity.User;
@@ -101,6 +104,7 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
     private final CachedUserPrincipalService cachedUserPrincipalService;
     private final CacheManager cacheManager;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Transactional(readOnly = true)
     public PageResponse<UserAdminResponse> getUsers(
@@ -1046,7 +1050,49 @@ public class AdminService {
         record.setStatus(newStatus);
         if (oldStatus != newStatus) {
             audit("ApplicationRecord", record.getId(), "CHANGE_STATUS", oldStatus.name(), newStatus.name(), authentication);
+            publishApplicationStatusNotification(record, newStatus);
         }
+    }
+
+    private void publishApplicationStatusNotification(ApplicationRecord record, ApplicationStatus status) {
+        NotificationType type = switch (status) {
+            case APPROVED -> NotificationType.APPROVED;
+            case REJECTED -> NotificationType.REJECTED;
+            default -> null;
+        };
+        if (type == null) {
+            return;
+        }
+
+        notificationEventPublisher.publishAfterCommit(new NotificationEvent(
+                record.getUser().getId(),
+                type,
+                Map.of(
+                        "studentName", displayName(record.getUser()),
+                        "campaignName", record.getCampaign().getName(),
+                        "status", status.name(),
+                        "reason", rejectionReason(record)
+                ),
+                "ApplicationRecord",
+                record.getPublicId()
+        ));
+    }
+
+    private String rejectionReason(ApplicationRecord record) {
+        return record.getEvidences().stream()
+                .filter(evidence -> evidence.getEvidenceStatus() == EvidenceStatus.REJECTED)
+                .map(Evidence::getReviewerComment)
+                .filter(comment -> comment != null && !comment.isBlank())
+                .findFirst()
+                .orElse("");
+    }
+
+    private String displayName(User user) {
+        UserDetail detail = user.getDetail();
+        if (detail != null && detail.getFullName() != null && !detail.getFullName().isBlank()) {
+            return detail.getFullName();
+        }
+        return user.getEmail();
     }
 
     private boolean isCriteriaPassed(

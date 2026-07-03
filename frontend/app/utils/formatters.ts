@@ -33,3 +33,16 @@ export const formatAddress = (
 
   return parts.join(', ')
 }
+
+export const isCampaignMatchLevel = (campaignLevel: string, targetLevel: string): boolean => {
+  if (targetLevel === 'UNIVERSITY') {
+    return ['UNIVERSITY', 'UNI_CITY', 'UNI_NATION', 'ALL'].includes(campaignLevel)
+  }
+  if (targetLevel === 'CITY') {
+    return ['CITY', 'UNI_CITY', 'CITY_NATION', 'ALL'].includes(campaignLevel)
+  }
+  if (targetLevel === 'NATION') {
+    return ['NATION', 'UNI_NATION', 'CITY_NATION', 'ALL'].includes(campaignLevel)
+  }
+  return campaignLevel === targetLevel
+}

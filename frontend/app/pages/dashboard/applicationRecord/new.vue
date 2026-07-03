@@ -108,6 +108,9 @@ async function openEvidenceWorkspace() {
 
     if (status === 409 || message.includes('đã đăng ký') || message.includes('Ä‘Ã£ Ä‘Äƒng kÃ½')) {
       const res = await getMyApplicationRecord(campaignPublicId, selectedMode.value === 'group', selectedLevel.value)
+      if (!res.data) {
+        throw new Error('Không tìm thấy hồ sơ đã đăng ký.')
+      }
       await navigateTo({
         path: `/dashboard/applicationRecord/${res.data.campaignPublicId}/evidences`,
         query: {

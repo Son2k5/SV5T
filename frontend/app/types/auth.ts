@@ -33,3 +33,8 @@ export type ResetPasswordPayload = {
   token: string
   newPw: string
 }
+
+export type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}

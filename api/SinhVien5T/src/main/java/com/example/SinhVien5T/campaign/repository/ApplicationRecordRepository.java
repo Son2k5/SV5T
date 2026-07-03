@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,11 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
 
     boolean existsByUserIdAndCampaignId(Long userId, Long campaignId);
     boolean existsByUserIdAndCampaignIdAndIsGroupAndLevel(Long userId, Long campaignId, Boolean isGroup, Level level);
+    boolean existsByUserIdAndCampaignIdAndStatusIn(
+            Long userId,
+            Long campaignId,
+            Collection<ApplicationStatus> statuses
+    );
 
     @EntityGraph(attributePaths = "campaign")
     Optional<ApplicationRecord> findByUserIdAndCampaignId(Long userId, Long campaignId);

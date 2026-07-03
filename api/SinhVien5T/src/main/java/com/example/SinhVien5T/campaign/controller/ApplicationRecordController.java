@@ -42,7 +42,8 @@ public class ApplicationRecordController {
             Authentication authentication
     ) {
         ApplicationRecordResponse data = applicationRecordService.getMine(campaignPublicId, isGroup, level, authentication);
-        return ResponseEntity.ok(ApiResponse.success("Lấy hồ sơ thành công", data));
+        String message = data == null ? "Chưa có hồ sơ" : "Lấy hồ sơ thành công";
+        return ResponseEntity.ok(ApiResponse.success(message, data));
     }
 
     @PostMapping(value = "/campaigns/{campaignPublicId}/evidences", consumes = MediaType.APPLICATION_JSON_VALUE)

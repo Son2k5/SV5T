@@ -34,6 +34,7 @@ export interface CampaignSummaryResponse {
   status?: string
   startDate?: string
   endDate?: string
+  description?: string | null
   isGroup?: 'INDIVIDUAL' | 'GROUP' | 'BOTH'
 }
 

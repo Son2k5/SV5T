@@ -1,131 +1,119 @@
 <template>
   <div class="space-y-5">
     <!-- Header Page -->
-    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-      <div>
-        <h1 class="text-2xl font-bold text-[#1E293B] tracking-tight">
-          {{ isGroup ? 'Quản lý hồ sơ tập thể' : 'Quản lý hồ sơ cá nhân' }}
-        </h1>
-        <p class="mt-1 text-sm text-[#64748B]">
-          {{ isGroup ? 'Xem và đánh giá minh chứng tập thể lớp, câu lạc bộ hoặc đơn vị.' : 'Xem và đánh giá minh chứng sinh viên theo từng tiêu chí.' }}
-        </p>
-      </div>
-      <UButton
-        color="neutral"
-        variant="outline"
-        icon="i-lucide-refresh-cw"
-        label="Làm mới"
-        :loading="loading"
-        class="rounded-xl font-medium cursor-pointer"
-        @click="load"
-      />
+    <div class="px-1">
+      <h1 class="text-2xl font-bold text-[#1E293B] tracking-tight">
+        {{ isGroup ? 'Quản lý hồ sơ tập thể' : 'Quản lý hồ sơ cá nhân' }}
+      </h1>
+      <p class="mt-1 text-sm text-[#64748B]">
+        {{ isGroup ? 'Xem và đánh giá minh chứng tập thể lớp, câu lạc bộ hoặc đơn vị.' : 'Xem và đánh giá minh chứng sinh viên theo từng tiêu chí.' }}
+      </p>
     </div>
 
-    <!-- Filters Section (Compact, single-row layout) -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-      <div
-        class="grid gap-3 sm:grid-cols-2"
-        :class="isCampaignMultiLevel ? 'md:grid-cols-4' : 'md:grid-cols-3'"
-      >
-        <!-- Search Keyword -->
-        <UInput
-          v-model="keyword"
-          icon="i-lucide-search"
-          placeholder="Tìm kiếm họ tên, MSSV, email..."
-          class="w-full"
-        />
-
-        <!-- Campaign Dropdown -->
-        <USelect
-          v-model="campaignPublicId"
-          :items="campaignOptions"
-          placeholder="Chọn đợt xét duyệt"
-          class="w-full"
-        />
-
-        <!-- Application Status Dropdown -->
-        <USelect
-          v-model="status"
-          :items="statusOptions"
-          placeholder="Tất cả trạng thái hồ sơ"
-          class="w-full"
-        />
-
-        <!-- Level Dropdown (Only show when Campaign has multiple levels) -->
-        <USelect
-          v-if="isCampaignMultiLevel"
-          v-model="selectedLevel"
-          :items="supportedLevelOptions"
-          placeholder="Chọn cấp xét tuyển"
-          class="w-full"
-        />
-      </div>
-    </div>
-
-    <!-- Error message banner -->
-    <div
-      v-if="error"
-      class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-rose-50 p-4 border border-rose-100 text-sm text-rose-700"
-    >
-      <div class="flex items-center gap-2">
-        <UIcon
-          name="i-lucide-alert-circle"
-          class="size-5 shrink-0 text-rose-500"
-        />
-        <span>{{ error }}</span>
-      </div>
-      <UButton
-        color="error"
-        variant="soft"
-        label="Thử lại"
-        class="rounded-lg"
-        @click="load"
-      />
-    </div>
-
-    <!-- Empty Campaign State -->
-    <CommonPageEmpty
-      v-if="!campaignPublicId"
-      title="Chưa chọn đợt xét chọn"
-      desc="Vui lòng lựa chọn một đợt xét chọn trên bộ lọc để hiển thị danh sách hồ sơ sinh viên cần duyệt."
+    <slot
+      name="mode-switcher"
+      :loading="loading"
+      :refresh="load"
     />
 
-    <!-- Main Applications List / Loading / Empty states -->
-    <div v-else>
-      <CommonPageLoading v-if="loading && !pageData" />
+    <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <!-- Filters Section (Compact, single-row layout) -->
+      <div class="border-b border-slate-200/70 bg-slate-50/70 p-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <!-- Search Keyword -->
+          <UInput
+            v-model="keyword"
+            icon="i-lucide-search"
+            placeholder="Tìm kiếm họ tên, MSSV, email..."
+            class="w-full"
+          />
 
-      <CommonPageEmpty
-        v-else-if="pageData && !pageData.content.length"
-        :title="isGroup ? 'Chưa có hồ sơ tập thể' : 'Chưa có hồ sơ sinh viên'"
-        :desc="isGroup ? 'Không tìm thấy tập thể nào tham gia hoặc nộp minh chứng phù hợp.' : 'Không tìm thấy sinh viên nào tham gia hoặc nộp minh chứng phù hợp.'"
-      />
+          <!-- Campaign Dropdown -->
+          <USelect
+            v-model="campaignPublicId"
+            :items="campaignOptions"
+            placeholder="Chọn đợt xét duyệt"
+            class="w-full"
+          />
 
-      <template v-else>
-        <!-- Custom student table component -->
-        <AdminEvidenceStudentApplicationTable
-          :applications="pageData?.content || []"
-          :loading="loading"
-          :is-group="isGroup"
-          @view-details="openApplicationDetails"
-        />
+          <!-- Application Status Dropdown -->
+          <USelect
+            v-model="status"
+            :items="statusOptions"
+            placeholder="Tất cả trạng thái hồ sơ"
+            class="w-full"
+          />
 
-        <!-- Pagination -->
-        <div
-          v-if="pageData"
-          class="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center bg-white p-4 rounded-xl border border-slate-200/60 shadow-2xs"
-        >
-          <p class="text-xs text-[#64748B] font-semibold">
-            Tổng cộng {{ pageData.totalElements }} hồ sơ {{ isGroup ? 'tập thể' : 'sinh viên' }}
-          </p>
-          <UPagination
-            v-model:page="uiPage"
-            :total="pageData.totalElements"
-            :items-per-page="pageData.size"
-            class="scale-90"
+          <!-- Level Dropdown -->
+          <USelect
+            v-model="selectedLevel"
+            :items="supportedLevelOptions"
+            placeholder="Chọn cấp xét tuyển"
+            class="w-full"
           />
         </div>
-      </template>
-    </div>
+      </div>
+
+      <!-- Error message banner -->
+      <div
+        v-if="error"
+        class="m-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-700"
+      >
+        <div class="flex items-center gap-2">
+          <UIcon
+            name="i-lucide-alert-circle"
+            class="size-5 shrink-0 text-rose-500"
+          />
+          <span>{{ error }}</span>
+        </div>
+        <UButton
+          color="error"
+          variant="soft"
+          label="Thử lại"
+          class="rounded-lg"
+          @click="load"
+        />
+      </div>
+
+      <!-- Main Applications List / Loading / Empty states -->
+      <div class="p-5">
+        <CommonPageLoading v-if="loading && !pageData" />
+
+        <CommonPageEmpty
+          v-else-if="pageData && !pageData.content.length"
+          :title="isGroup ? 'Chưa có hồ sơ tập thể' : 'Chưa có hồ sơ sinh viên'"
+          :desc="isGroup ? 'Không tìm thấy tập thể nào tham gia hoặc nộp minh chứng phù hợp.' : 'Không tìm thấy sinh viên nào tham gia hoặc nộp minh chứng phù hợp.'"
+        />
+
+        <template v-else>
+          <!-- Custom student table component -->
+          <div class="mx-auto w-full">
+            <AdminEvidenceStudentApplicationTable
+              :applications="pageData?.content || []"
+              :loading="loading"
+              :is-group="isGroup"
+              @view-details="openApplicationDetails"
+            />
+          </div>
+
+          <!-- Pagination -->
+          <div
+            v-if="pageData"
+            class="mt-4 flex flex-col items-center justify-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 px-4 py-3 text-center sm:flex-row"
+          >
+            <p class="text-xs font-semibold text-slate-500">
+              Tổng cộng <span class="font-bold text-slate-800">{{ pageData.totalElements }}</span> hồ sơ {{ isGroup ? 'tập thể' : 'sinh viên' }}
+            </p>
+            <UPagination
+              v-model:page="uiPage"
+              :total="pageData.totalElements"
+              :items-per-page="pageData.size"
+              class="scale-90"
+            />
+          </div>
+        </template>
+      </div>
+    </section>
 
     <!-- Split Criteria & Evidences Review Modal -->
     <AdminEvidenceStudentApplicationDetailModal
@@ -203,11 +191,6 @@ const activeCampaign = computed(() => {
   return campaigns.value.find(c => c.publicId === campaignPublicId.value)
 })
 
-const isCampaignMultiLevel = computed(() => {
-  const lvl = activeCampaign.value?.level
-  return lvl === 'ALL' || lvl === 'UNI_CITY' || lvl === 'UNI_NATION' || lvl === 'CITY_NATION'
-})
-
 const supportedLevelOptions = computed(() => {
   const lvl = activeCampaign.value?.level
   const allOptions = [
@@ -216,11 +199,11 @@ const supportedLevelOptions = computed(() => {
     { label: 'Cấp thành phố', value: 'CITY' },
     { label: 'Cấp trung ương', value: 'NATION' },
   ]
-  if (lvl === 'ALL') return allOptions
+  if (!lvl || lvl === 'ALL') return allOptions
   if (lvl === 'UNI_CITY') return allOptions.filter(o => o.value === undefined || o.value === 'UNIVERSITY' || o.value === 'CITY')
   if (lvl === 'UNI_NATION') return allOptions.filter(o => o.value === undefined || o.value === 'UNIVERSITY' || o.value === 'NATION')
   if (lvl === 'CITY_NATION') return allOptions.filter(o => o.value === undefined || o.value === 'CITY' || o.value === 'NATION')
-  return []
+  return allOptions.filter(o => o.value === undefined || o.value === lvl)
 })
 
 const campaignOptions = computed(() => [
@@ -229,11 +212,6 @@ const campaignOptions = computed(() => [
 ])
 
 const load = async () => {
-  if (!campaignPublicId.value) {
-    pageData.value = null
-    return
-  }
-
   loading.value = true
   error.value = ''
   try {
@@ -261,7 +239,7 @@ const loadCampaigns = async () => {
     campaigns.value = response.data.content
     // Default to the first active/closed campaign of the correct type if exists to display content immediately
     if (filteredCampaigns.value.length > 0 && !campaignPublicId.value) {
-      campaignPublicId.value = filteredCampaigns.value[0].publicId
+      campaignPublicId.value = filteredCampaigns.value[0]?.publicId
     }
   }
   catch {

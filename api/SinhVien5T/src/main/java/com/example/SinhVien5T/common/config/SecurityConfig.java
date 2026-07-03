@@ -64,9 +64,11 @@ public class SecurityConfig {
                                 "/user/auth/**",
                                 "/actuator/health",
                                 "/actuator/health/**",
+                                "/public/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/ws/**"
                         ).permitAll()
 
                         // Các endpoint phải authen

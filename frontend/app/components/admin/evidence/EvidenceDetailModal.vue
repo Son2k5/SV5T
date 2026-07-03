@@ -89,7 +89,7 @@
             class="w-full flex justify-center"
           >
             <img
-              :src="criteria.evidenceUrl"
+              :src="criteria.evidenceUrl ?? undefined"
               alt="Minh chứng ảnh"
               class="max-h-[350px] object-contain rounded-xl shadow-sm border border-slate-200/40 bg-white"
             >
@@ -101,7 +101,7 @@
             class="w-full h-[350px] flex flex-col"
           >
             <iframe
-              :src="criteria.evidenceUrl"
+              :src="criteria.evidenceUrl ?? undefined"
               class="w-full h-full border-0 rounded-xl"
               title="PDF Minh chứng"
             />
@@ -112,7 +112,7 @@
                 icon="i-lucide-download"
                 label="Tải xuống PDF"
                 size="xs"
-                :to="criteria.evidenceUrl"
+                :to="criteria.evidenceUrl ?? undefined"
                 target="_blank"
               />
             </div>
@@ -140,7 +140,7 @@
               icon="i-lucide-external-link"
               label="Mở liên kết minh chứng"
               class="mt-4 rounded-xl"
-              :to="criteria.evidenceUrl"
+              :to="criteria.evidenceUrl ?? undefined"
               target="_blank"
             />
           </div>
@@ -176,7 +176,7 @@
               icon="i-lucide-download"
               label="Tải tệp minh chứng"
               class="mt-4 rounded-xl"
-              :to="criteria.evidenceUrl"
+              :to="criteria.evidenceUrl ?? undefined"
               target="_blank"
             />
           </div>

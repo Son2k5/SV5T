@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-[#F8FAFC]">
+    <CommonMaintenanceBanner />
     <div class="hidden min-h-screen overflow-hidden md:grid md:grid-cols-[minmax(380px,460px)_1fr]">
       <div class="relative z-1 flex items-center justify-center border-r border-[#E5E7EB] bg-white px-8">
         <div class="absolute top-8 flex w-max justify-center gap-3">

@@ -8,8 +8,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [criteriaId: number, evidenceUrl: string]
-  saveFile: [criteriaId: number, file: File]
+  save: [criteriaId: string, evidenceUrl: string]
+  saveFile: [criteriaId: string, file: File]
 }>()
 
 const isOpen = ref(!props.criteria.evidenceUrl)
@@ -36,7 +36,7 @@ const saveLink = () => {
     return
   }
 
-  emit('save', props.criteria.id, value)
+  emit('save', props.criteria.publicId, value)
 }
 
 const saveFile = () => {
@@ -47,7 +47,7 @@ const saveFile = () => {
     return
   }
 
-  emit('saveFile', props.criteria.id, selectedFile.value)
+  emit('saveFile', props.criteria.publicId, selectedFile.value)
 }
 
 const handleFileChange = (event: Event) => {
@@ -176,7 +176,7 @@ const handleFileChange = (event: Event) => {
       >
         <EvidenceCard
           v-for="child in criteria.subCriteriaList"
-          :key="child.id"
+          :key="child.publicId"
           :criteria="child"
           :disabled="disabled"
           :loading="loading"

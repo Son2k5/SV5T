@@ -68,7 +68,8 @@
             color="neutral"
             variant="ghost"
             :icon="sidebarOpen ? 'i-lucide-panel-right-open' : 'i-lucide-panel-left-open'"
-            class="size-10 rounded-xl !p-0 text-[#64748B] hover:bg-blue-50 hover:text-[#2563EB]"
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl !p-0 text-white/90 transition-colors duration-200 hover:bg-white/15 hover:text-white"
+            :ui="{ leadingIcon: 'size-5 shrink-0' }"
             aria-label="Ẩn hoặc hiện thanh điều hướng"
             @click="toggleSidebarOpen"
           />
@@ -81,25 +82,19 @@
             :ui="{ base: 'h-10 rounded-2xl bg-[#F8FAFC] border-[#E5E7EB] text-[#1E293B]' }"
             @keyup.enter="goToSearch"
           />
-          <div class="ml-auto hidden items-center gap-1 sm:flex">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-bell"
-              class="size-10 rounded-xl !p-0 text-[#64748B] hover:bg-blue-50"
-              aria-label="Thông báo"
-            />
+          <div class="ml-auto flex items-center gap-1">
+            <CommonNotificationBell />
           </div>
           <UDropdownMenu :items="profileActions">
             <UButton
               color="neutral"
               variant="ghost"
-              class="rounded-2xl px-2 hover:bg-[#F8FAFC]"
+              class="inline-flex h-10 max-w-[13rem] items-center rounded-xl px-2 py-0 transition-colors duration-200 hover:bg-white/15"
             >
               <UUser
                 :name="profile?.fullName || profile?.email || 'Quản trị viên'"
                 :avatar="{ src: profile?.avatar || '/profilePlaceholder.png' }"
-                :ui="{ name: 'hidden md:block text-[#1E293B] font-semibold', description: 'hidden md:block text-[#64748B]' }"
+                :ui="{ root: 'min-w-0', name: 'hidden truncate md:block text-white font-semibold', description: 'hidden truncate md:block text-blue-100' }"
               />
             </UButton>
           </UDropdownMenu>
@@ -198,11 +193,13 @@ const menu = [
   { label: 'Đợt xét duyệt', icon: 'i-lucide-calendar-range', to: '/admin/campaigns' },
   { label: 'Quản lý tiêu chí', icon: 'i-lucide-list-checks', to: '/admin/criteria' },
   { label: 'Hồ sơ xét duyệt', icon: 'i-lucide-file-text', to: '/admin/evidence' },
+  { label: 'Chat', icon: 'i-lucide-messages-square', to: '/admin/chat' },
   { label: 'Cấu hình', icon: 'i-lucide-settings-2', to: '/admin/settings' },
 ]
 
 const pageTitle = computed(() => menu.find(item => route.path.startsWith(item.to))?.label || 'Quản trị')
 const profileActions = ref<DropdownMenuItem[]>([
+  { label: 'Cấu hình', icon: 'i-lucide-settings-2', onSelect: () => navigateTo('/admin/settings') },
   { label: 'Đăng xuất', icon: 'i-lucide-log-out', onSelect: () => logOut() },
 ])
 

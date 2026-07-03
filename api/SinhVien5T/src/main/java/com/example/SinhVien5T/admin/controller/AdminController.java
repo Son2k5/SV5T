@@ -142,7 +142,7 @@ public class AdminController {
         return ok("Lấy lịch sử người dùng thành công", adminService.getUserHistory(userPublicId, page, size));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
     @GetMapping("/admin/campaigns")
     public ResponseEntity<ApiResponse<PageResponse<CampaignResponse>>> getCampaigns(
             @RequestParam(defaultValue = "0") int page,
@@ -154,7 +154,7 @@ public class AdminController {
         return ok("Lấy danh sách đợt xét chọn thành công", adminService.getCampaigns(page, size, status, level, isGroup));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
     @GetMapping("/admin/campaigns/{campaignPublicId}")
     public ResponseEntity<ApiResponse<CampaignResponse>> getCampaign(@PathVariable String campaignPublicId) {
         return ok("Lấy thông tin đợt xét chọn thành công", adminService.getCampaign(campaignPublicId));

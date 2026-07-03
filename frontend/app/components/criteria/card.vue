@@ -6,7 +6,7 @@
     >
       <div class="flex items-center gap-3 lg:w-32 lg:flex-col">
         <div class="flex size-16 items-center justify-center rounded-2xl bg-blue-50 text-2xl font-bold text-[#2563EB] lg:size-20 lg:text-4xl">
-          {{ criteria.id }}
+          {{ index }}
         </div>
         <div
           v-if="criteria.isMandatory"
@@ -114,6 +114,7 @@ import type { Criteria } from '~/types/criteria'
 
 defineProps<{
   criteria: Criteria
+  index?: number
 }>()
 
 const toast = useToast()

@@ -1,9 +1,14 @@
 package com.example.SinhVien5T.user.service;
 
+import com.example.SinhVien5T.auth.repository.RefreshTokenRepository;
+import com.example.SinhVien5T.auth.service.RedisTokenService;
+import com.example.SinhVien5T.auth.service.TokenStateService;
+import com.example.SinhVien5T.common.security.CachedUserPrincipalService;
 import com.example.SinhVien5T.common.service.CloudinaryStorageService;
 import com.example.SinhVien5T.common.service.AssetCleanupScheduler;
 import com.example.SinhVien5T.common.service.StoredAsset;
 import com.example.SinhVien5T.common.config.CacheConfig;
+import com.example.SinhVien5T.user.dto.UserPasswordChangeRequest;
 import com.example.SinhVien5T.user.dto.UserProfileResponse;
 import com.example.SinhVien5T.user.dto.UserProfileUpdateRequest;
 import com.example.SinhVien5T.user.entity.AddressType;
@@ -20,9 +25,11 @@ import com.example.SinhVien5T.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,6 +48,14 @@ public class UserService {
     private final UserProfileMapper userProfileMapper;
     private final CloudinaryStorageService cloudinaryStorageService;
     private final AssetCleanupScheduler assetCleanupScheduler;
+    private final PasswordEncoder passwordEncoder;
+    private final CachedUserPrincipalService cachedUserPrincipalService;
+    private final RedisTokenService redisTokenService;
+    private final TokenStateService tokenStateService;
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    @Value("${app.redis.token.enabled:true}")
+    private boolean redisTokenEnabled;
 
     @Cacheable(cacheNames = CacheConfig.USER_PROFILE, key = "#authentication.principal.id", sync = true)
     @Transactional(readOnly = true)
@@ -90,6 +105,27 @@ public class UserService {
         );
     }
 
+    @Transactional
+    public void changeCurrentUserPassword(
+            Authentication authentication,
+            UserPasswordChangeRequest request
+    ) {
+        User user = findAuthenticatedUserWithProfile(authentication);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không đúng");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        cachedUserPrincipalService.evict(user.getId());
+        revokeUserSessions(user.getId());
+    }
+
     private UserProfileResponse updateAvatarInternal(
             Authentication authentication,
             Function<String, StoredAsset> uploader,
@@ -114,6 +150,16 @@ public class UserService {
         user.setAvatar(avatarAsset.url());
         user.setAvatarPublicId(avatarAsset.publicId());
         user.setAvatarResourceType(avatarAsset.resourceType());
+    }
+
+    private void revokeUserSessions(Long userId) {
+        if (redisTokenEnabled) {
+            redisTokenService.revokeAllRefreshTokens(userId);
+            tokenStateService.revokeAllAccessTokens(userId);
+            return;
+        }
+
+        refreshTokenRepository.revokeAllByUserId(userId);
     }
 
     private void validateUniqueProfileFields(User user, UserProfileUpdateRequest request) {

@@ -6,7 +6,6 @@ import com.example.SinhVien5T.campaign.dto.SaveEvidenceRequest;
 import com.example.SinhVien5T.campaign.entity.ApplicationRecord;
 import com.example.SinhVien5T.campaign.entity.ApplicationStatus;
 import com.example.SinhVien5T.campaign.entity.Level;
-import com.example.SinhVien5T.campaign.exception.DuplicateApplicationRecordException;
 import com.example.SinhVien5T.campaign.exception.InvalidApplicationRecordStateException;
 import com.example.SinhVien5T.campaign.repository.ApplicationRecordRepository;
 import com.example.SinhVien5T.campaign.entity.Campaign;
@@ -22,6 +21,9 @@ import com.example.SinhVien5T.common.config.CacheConfig;
 import com.example.SinhVien5T.common.service.AssetCleanupScheduler;
 import com.example.SinhVien5T.common.service.CloudinaryStorageService;
 import com.example.SinhVien5T.common.service.StoredAsset;
+import com.example.SinhVien5T.notification.dto.NotificationEvent;
+import com.example.SinhVien5T.notification.entity.NotificationType;
+import com.example.SinhVien5T.notification.service.NotificationEventPublisher;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
 import com.example.SinhVien5T.user.entity.User;
 import com.example.SinhVien5T.user.repository.UserRepository;
@@ -56,6 +58,7 @@ public class ApplicationRecordService {
     private final UserRepository userRepository;
     private final CloudinaryStorageService cloudinaryStorageService;
     private final AssetCleanupScheduler assetCleanupScheduler;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Caching(
             put = @CachePut(
@@ -90,13 +93,16 @@ public class ApplicationRecordService {
         }
 
         Boolean isGroup = request.getIsGroup() != null && request.getIsGroup();
-        if (applicationRecordRepository.existsByUserIdAndCampaignIdAndIsGroupAndLevel(
-                currentUser.getId(),
-                campaign.getId(),
-                isGroup,
-                recordLevel
-        )) {
-            throw new DuplicateApplicationRecordException("Bạn đã đăng ký hồ sơ cho cấp này trong đợt xét chọn");
+        ApplicationRecord existingRecord = applicationRecordRepository
+                .findByUserIdAndCampaignIdAndIsGroupAndLevel(
+                        currentUser.getId(),
+                        campaign.getId(),
+                        isGroup,
+                        recordLevel
+                )
+                .orElse(null);
+        if (existingRecord != null) {
+            return toResponse(existingRecord);
         }
 
         User user = userRepository.findById(currentUser.getId())
@@ -135,11 +141,10 @@ public class ApplicationRecordService {
             targetLevel = campaign.getLevel().getDefaultLevel();
         }
 
-        ApplicationRecord record = applicationRecordRepository
+        return applicationRecordRepository
                 .findByUserIdAndCampaignPublicIdAndIsGroupAndLevel(currentUser.getId(), campaignPublicId, isGroup != null ? isGroup : false, targetLevel)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ"));
-
-        return toResponse(record);
+                .map(this::toResponse)
+                .orElse(null);
     }
 
     @Caching(evict = {
@@ -307,7 +312,24 @@ public class ApplicationRecordService {
         validateSubmission(record);
         record.setStatus(ApplicationStatus.SUBMITTED);
 
-        return toResponse(applicationRecordRepository.save(record));
+        ApplicationRecord saved = applicationRecordRepository.save(record);
+        publishSubmissionNotification(saved);
+
+        return toResponse(saved);
+    }
+
+    private void publishSubmissionNotification(ApplicationRecord record) {
+        notificationEventPublisher.publishAfterCommit(new NotificationEvent(
+                record.getUser().getId(),
+                NotificationType.SUBMISSION_RECEIVED,
+                Map.of(
+                        "studentName", displayName(record.getUser()),
+                        "campaignName", record.getCampaign().getName(),
+                        "status", record.getStatus().name()
+                ),
+                "ApplicationRecord",
+                record.getPublicId()
+        ));
     }
 
     private CustomUserDetails getCurrentUser(Authentication authentication) {
@@ -332,6 +354,15 @@ public class ApplicationRecordService {
                 .build();
     }
 
+    private String displayName(User user) {
+        if (user.getDetail() != null
+                && user.getDetail().getFullName() != null
+                && !user.getDetail().getFullName().isBlank()) {
+            return user.getDetail().getFullName();
+        }
+        return user.getEmail();
+    }
+
     private void applyEvidenceAsset(Evidence evidence, StoredAsset storedAsset) {
         evidence.setEvidenceUrl(storedAsset.url());
         evidence.setEvidencePublicId(storedAsset.publicId());
@@ -346,6 +377,13 @@ public class ApplicationRecordService {
                         record.getCampaign().getId(),
                         record.getIsGroup() != null ? record.getIsGroup() : false
                 );
+
+        if (record.getCampaign().getLevel().isMultiLevel()) {
+            final Level recordLevel = record.getLevel();
+            criteriaList = criteriaList.stream()
+                    .filter(c -> c.getStandard().getLevel() == recordLevel)
+                    .toList();
+        }
         Map<Long, Evidence> evidenceByCriteriaId = evidenceRepository.findByApplicationRecordId(record.getId())
                 .stream()
                 .collect(Collectors.toMap(

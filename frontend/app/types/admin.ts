@@ -204,6 +204,8 @@ export interface CriteriaResultDTO {
   evidenceUrl: string | null
   evidenceStatus: EvidenceStatus | null
   reviewerComment: string | null
+  evidenceOriginalFilename?: string | null
+  evidencePublicId?: string | null
   subCriteriaList: CriteriaResultDTO[]
 }
 

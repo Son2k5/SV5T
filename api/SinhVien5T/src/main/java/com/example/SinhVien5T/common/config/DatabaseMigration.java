@@ -74,5 +74,30 @@ public class DatabaseMigration {
         } catch (Exception e) {
             log.error("Failed to migrate application_record.level column: " + e.getMessage());
         }
+
+        try {
+            log.info("Starting database migration: seeding notification permissions");
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO permissions (code, name, description)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)
+                    """,
+                    "MANAGE_NOTIFICATION_SETTINGS",
+                    "Manage notification settings",
+                    "Configure SMTP, realtime notification rules, and notification templates"
+            );
+            jdbcTemplate.execute(
+                    """
+                    INSERT IGNORE INTO user_permissions (user_id, permission_code)
+                    SELECT id, 'MANAGE_NOTIFICATION_SETTINGS'
+                    FROM users
+                    WHERE role = 'ADMIN'
+                    """
+            );
+            log.info("Successfully seeded notification permissions");
+        } catch (Exception e) {
+            log.error("Failed to seed notification permissions: " + e.getMessage());
+        }
     }
 }

@@ -268,7 +268,14 @@
             />
             Đánh giá & Nhận xét của Admin
           </h4>
+          <div
+            v-if="readonly"
+            class="bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-[#475569] min-h-[60px]"
+          >
+            {{ criteria.reviewerComment || 'Chưa có nhận xét nào từ giám khảo.' }}
+          </div>
           <UTextarea
+            v-else
             v-model="comment"
             placeholder="Nhập nhận xét để sinh viên có thể đọc..."
             class="w-full bg-white text-sm"
@@ -276,7 +283,10 @@
           />
         </div>
 
-        <div class="flex items-center justify-between gap-3 pt-2">
+        <div
+          v-if="!readonly"
+          class="flex items-center justify-between gap-3 pt-2"
+        >
           <!-- Left: Save Comment -->
           <UButton
             color="neutral"
@@ -324,7 +334,7 @@
         <div
           v-if="isLightboxOpen && criteria?.evidenceUrl"
           class="fixed inset-0 z-[9999] flex flex-col bg-black/95 select-none"
-          @click="isLightboxOpen = false"
+          @click.self="closeLightbox"
         >
           <!-- Lightbox Top bar -->
           <div
@@ -340,75 +350,100 @@
             </div>
 
             <!-- Zoom and Close Actions -->
-            <div class="flex items-center gap-2">
-              <UButton
-                color="white"
-                variant="ghost"
-                icon="i-lucide-zoom-out"
-                class="text-white hover:bg-white/10 rounded-full cursor-pointer"
+            <div
+              class="relative z-20 flex items-center gap-2 pointer-events-auto"
+              @click.stop
+              @pointerdown.stop
+            >
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
                 title="Thu nhỏ"
-                @click.stop="zoomOut"
-              />
+                :disabled="zoomScale <= MIN_ZOOM"
+                @click.stop.prevent="zoomOut"
+              >
+                <UIcon
+                  name="i-lucide-zoom-out"
+                  class="size-5"
+                />
+              </button>
               <span class="text-xs font-mono min-w-10 text-center text-slate-300 select-none">
                 {{ Math.round(zoomScale * 100) }}%
               </span>
-              <UButton
-                color="white"
-                variant="ghost"
-                icon="i-lucide-zoom-in"
-                class="text-white hover:bg-white/10 rounded-full cursor-pointer"
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
                 title="Phóng to"
-                @click.stop="zoomIn"
-              />
-              <UButton
-                color="white"
-                variant="ghost"
-                icon="i-lucide-rotate-ccw"
-                class="text-white hover:bg-white/10 rounded-full cursor-pointer"
+                :disabled="zoomScale >= MAX_ZOOM"
+                @click.stop.prevent="zoomIn"
+              >
+                <UIcon
+                  name="i-lucide-zoom-in"
+                  class="size-5"
+                />
+              </button>
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
                 title="Đặt lại"
-                @click.stop="resetZoom"
-              />
-              <UButton
-                color="white"
-                variant="ghost"
-                icon="i-lucide-download"
-                class="text-white hover:bg-white/10 rounded-full cursor-pointer mr-2 animate-pulse"
+                @click.stop.prevent="resetZoom"
+              >
+                <UIcon
+                  name="i-lucide-rotate-ccw"
+                  class="size-5"
+                />
+              </button>
+              <button
+                type="button"
+                class="mr-2 flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
                 title="Tải ảnh về máy"
-                @click.stop="downloadImage"
-              />
+                @click.stop.prevent="downloadImage"
+              >
+                <UIcon
+                  name="i-lucide-download"
+                  class="size-5"
+                />
+              </button>
 
               <div class="h-6 w-px bg-white/20 mr-1" />
 
-              <UButton
-                color="white"
-                variant="ghost"
-                icon="i-lucide-x"
-                class="text-white hover:bg-white/10 rounded-full cursor-pointer"
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60"
                 aria-label="Đóng ảnh"
-                @click.stop="isLightboxOpen = false"
-              />
+                title="Đóng ảnh"
+                @click.stop.prevent="closeLightbox"
+              >
+                <UIcon
+                  name="i-lucide-x"
+                  class="size-5"
+                />
+              </button>
             </div>
           </div>
 
           <!-- Lightbox Main Image (Scrollable container supporting zoom) -->
           <div
-            class="flex-1 overflow-auto flex items-center justify-center p-6 min-h-0 bg-slate-950/20"
-            @click="isLightboxOpen = false"
+            class="flex-1 overflow-hidden flex items-center justify-center p-6 min-h-0 bg-slate-950/20 touch-none"
+            :class="zoomScale > 1 ? (isPanningLightbox ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'"
+            @click.self="handleLightboxViewportClick"
           >
             <div
-              class="relative flex items-center justify-center transition-all duration-150 ease-out"
+              class="relative flex shrink-0 items-center justify-center"
+              :class="isPanningLightbox ? 'transition-none' : 'transition-transform duration-150 ease-out'"
               :style="{
-                minWidth: zoomScale === 1 ? 'auto' : `calc(85vw * ${zoomScale})`,
-                minHeight: zoomScale === 1 ? 'auto' : `calc(80vh * ${zoomScale})`,
-                transform: `scale(${zoomScale})`,
+                transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${zoomScale})`,
                 transformOrigin: 'center center',
               }"
-              @click.stop
+              @click.stop.prevent="handleLightboxImageClick"
+              @mousedown.stop.prevent="startLightboxPan"
             >
               <img
                 :src="criteria.evidenceUrl"
                 alt="Ảnh phóng to"
-                class="max-h-[80vh] max-w-[85vw] object-contain shadow-2xl rounded select-none"
+                draggable="false"
+                class="pointer-events-none max-h-[80vh] max-w-[85vw] object-contain shadow-2xl rounded select-none"
+                @dragstart.prevent
               >
             </div>
           </div>
@@ -429,14 +464,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import type { CriteriaResultDTO, StandardResultDTO } from '~/types/admin'
 
-const props = defineProps<{
-  criteria: CriteriaResultDTO | null
-  standard: StandardResultDTO | null
-  loading?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    criteria: CriteriaResultDTO | null
+    standard: StandardResultDTO | null
+    loading?: boolean
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false,
+  }
+)
 
 const emit = defineEmits<{
   'approve': [data: { criteria: CriteriaResultDTO, comment: string }]
@@ -448,14 +489,26 @@ const toast = useToast()
 const comment = ref('')
 const isLightboxOpen = ref(false)
 const zoomScale = ref(1)
+const panOffset = ref({ x: 0, y: 0 })
+const isPanningLightbox = ref(false)
+const didPanLightbox = ref(false)
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 4
+const ZOOM_STEP = 0.25
+let panStartX = 0
+let panStartY = 0
+let panStartOffsetX = 0
+let panStartOffsetY = 0
 
 // Close lightbox & reset zoom if criteria changes
 watch(
   () => props.criteria?.publicId,
   () => {
     comment.value = props.criteria?.reviewerComment || ''
+    stopLightboxPan()
     isLightboxOpen.value = false
     zoomScale.value = 1
+    resetPanOffset()
   },
   { immediate: true },
 )
@@ -464,24 +517,106 @@ watch(
 watch(isLightboxOpen, (isOpen) => {
   if (!isOpen) {
     zoomScale.value = 1
+    resetPanOffset()
   }
 })
 
 function zoomIn() {
-  if (zoomScale.value < 4) {
-    zoomScale.value = Math.min(4, zoomScale.value + 0.25)
+  if (zoomScale.value < MAX_ZOOM) {
+    zoomScale.value = Math.min(MAX_ZOOM, zoomScale.value + ZOOM_STEP)
   }
 }
 
 function zoomOut() {
-  if (zoomScale.value > 0.5) {
-    zoomScale.value = Math.max(0.5, zoomScale.value - 0.25)
+  if (zoomScale.value > MIN_ZOOM) {
+    zoomScale.value = Math.max(MIN_ZOOM, zoomScale.value - ZOOM_STEP)
+    if (zoomScale.value <= 1) {
+      resetPanOffset()
+    }
   }
 }
 
 function resetZoom() {
   zoomScale.value = 1
+  resetPanOffset()
 }
+
+function closeLightbox() {
+  stopLightboxPan()
+  isLightboxOpen.value = false
+  zoomScale.value = 1
+  didPanLightbox.value = false
+  resetPanOffset()
+}
+
+function resetPanOffset() {
+  panOffset.value = { x: 0, y: 0 }
+}
+
+function startLightboxPan(event: MouseEvent) {
+  if (zoomScale.value <= 1) return
+
+  isPanningLightbox.value = true
+  didPanLightbox.value = false
+  panStartX = event.clientX
+  panStartY = event.clientY
+  panStartOffsetX = panOffset.value.x
+  panStartOffsetY = panOffset.value.y
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('mousemove', moveLightboxPan)
+    window.addEventListener('mouseup', endLightboxPan)
+  }
+}
+
+function moveLightboxPan(event: MouseEvent) {
+  if (!isPanningLightbox.value) return
+
+  const deltaX = event.clientX - panStartX
+  const deltaY = event.clientY - panStartY
+
+  if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+    didPanLightbox.value = true
+  }
+
+  panOffset.value = {
+    x: panStartOffsetX + deltaX,
+    y: panStartOffsetY + deltaY,
+  }
+
+  event.preventDefault()
+}
+
+function endLightboxPan() {
+  if (!isPanningLightbox.value) return
+
+  stopLightboxPan()
+}
+
+function stopLightboxPan() {
+  isPanningLightbox.value = false
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('mousemove', moveLightboxPan)
+    window.removeEventListener('mouseup', endLightboxPan)
+  }
+}
+
+function handleLightboxViewportClick() {
+  if (didPanLightbox.value) {
+    didPanLightbox.value = false
+    return
+  }
+
+  closeLightbox()
+}
+
+function handleLightboxImageClick() {
+  if (didPanLightbox.value) {
+    didPanLightbox.value = false
+  }
+}
+
+onBeforeUnmount(stopLightboxPan)
 
 function downloadImage() {
   if (props.criteria?.evidenceUrl) {

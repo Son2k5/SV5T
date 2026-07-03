@@ -1,7 +1,7 @@
-import type { ApiResponse, LogInPayload, LoginResponse, RegisterPayload, ResetPasswordPayload } from '~/types/auth'
+import type { ApiResponse, ChangePasswordPayload, LogInPayload, LoginResponse, RegisterPayload, ResetPasswordPayload } from '~/types/auth'
 import type { H3Event } from 'h3'
 import { getCurrentInstance } from 'vue'
-import { LogInEndpoint, LogOutEndpoint, MissingPasswordEndpoint, refreshAccessTokenEndpoint, RegisterEndpoint, ResetPasswordEndpoint, VerifyResetEndpoint } from '~/constants/endpoints'
+import { CurrentUserPasswordEndpoint, LogInEndpoint, LogOutEndpoint, MissingPasswordEndpoint, refreshAccessTokenEndpoint, RegisterEndpoint, ResetPasswordEndpoint, VerifyResetEndpoint } from '~/constants/endpoints'
 import { getErrorMessage } from '~/utils/errors'
 
 type HttpMethod = 'GET' | 'HEAD' | 'PATCH' | 'POST' | 'PUT' | 'DELETE' | 'CONNECT' | 'OPTIONS' | 'TRACE' | 'get' | 'head' | 'patch' | 'post' | 'put' | 'delete' | 'connect' | 'options' | 'trace'
@@ -480,6 +480,12 @@ export const useAuth = () => {
     }
   }
 
+  const changePassword = async (payload: ChangePasswordPayload) =>
+    authFetch<ApiResponse<void>>(CurrentUserPasswordEndpoint(), {
+      method: 'PUT',
+      body: payload,
+    })
+
   const verifyResetToken = async (token: string) => {
     try {
       await $fetch<ApiResponse>(VerifyResetEndpoint(), {
@@ -496,6 +502,7 @@ export const useAuth = () => {
   return {
     accessToken,
     authFetch,
+    changePassword,
     ensureAccessToken,
     hasIdleExpired,
     logIn,

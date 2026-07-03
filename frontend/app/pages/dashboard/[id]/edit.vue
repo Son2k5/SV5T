@@ -444,7 +444,7 @@ const politicalStatusOptions = [
 const currentDay = today(getLocalTimeZone())
 const isEditing = ref(false)
 
-const formState = reactive<UserProfileUpdateRequest>({
+const formState = reactive<Omit<UserProfileUpdateRequest, 'major' | 'unionPosition'> & { major: string, unionPosition: string }>({
   fullName: profile.value?.fullName ?? '',
   birthDay: profile.value?.birthDay ?? '',
   gender: profile.value?.gender ?? 'MALE',
@@ -556,8 +556,8 @@ const onSubmit = async () => {
     ...formState,
     gender: formState.gender as Gender,
     politicalStatus: formState.politicalStatus as PoliticalStatus,
-    major: formState.major?.trim() || null,
-    unionPosition: formState.unionPosition?.trim() || null,
+    major: formState.major.trim() || null,
+    unionPosition: formState.unionPosition.trim() || null,
     permanentAddress: { ...formState.permanentAddress },
     temporaryAddress: { ...formState.temporaryAddress },
   })

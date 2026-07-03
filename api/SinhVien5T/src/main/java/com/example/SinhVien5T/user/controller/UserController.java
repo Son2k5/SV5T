@@ -2,6 +2,7 @@ package com.example.SinhVien5T.user.controller;
 
 import com.example.SinhVien5T.common.dto.response.ApiResponse;
 import com.example.SinhVien5T.user.dto.UserAvatarUpdateRequest;
+import com.example.SinhVien5T.user.dto.UserPasswordChangeRequest;
 import com.example.SinhVien5T.user.dto.UserProfileResponse;
 import com.example.SinhVien5T.user.dto.UserProfileUpdateRequest;
 import com.example.SinhVien5T.user.service.UserService;
@@ -44,6 +45,16 @@ public class UserController {
     ) {
         UserProfileResponse data = userService.updateCurrentUserProfile(authentication, request);
         ApiResponse<UserProfileResponse> response = ApiResponse.success("Cập nhật thông tin người dùng thành công", data);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PutMapping("/profile/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody UserPasswordChangeRequest request
+    ) {
+        userService.changeCurrentUserPassword(authentication, request);
+        ApiResponse<Void> response = ApiResponse.success("Đổi mật khẩu thành công", null);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

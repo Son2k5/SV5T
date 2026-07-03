@@ -23,6 +23,12 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
 
     Page<Campaign> findByAcademicYear(Long academicYear, Pageable pageable);
 
+    List<Campaign> findByCampaignStatusAndEndDateBetween(
+            CampaignStatus campaignStatus,
+            LocalDate from,
+            LocalDate to
+    );
+
     Page<Campaign> findByCampaignStatusAndLevelAndAcademicYear(
             CampaignStatus campaignStatus,
             Level level,

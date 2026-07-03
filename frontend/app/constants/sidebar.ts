@@ -7,8 +7,14 @@ export const sidebarOptions = [
   {
     name: 'Xét minh chứng',
     icon: 'i-heroicons-clipboard-document-check-solid',
-    path: '/dashboard/applicationRecord/new',
+    path: '/application-records',
   },
+  {
+    name: 'Hồ sơ đã nộp',
+    icon: 'i-heroicons-folder-open-solid',
+    path: '/submitted-records',
+  },
+
   {
     name: 'Đăng kí sự kiện',
     icon: 'i-heroicons-calendar-days-solid',
@@ -18,5 +24,10 @@ export const sidebarOptions = [
     name: 'Trợ giúp',
     icon: 'i-heroicons-question-mark-circle-solid',
     path: '',
+  },
+  {
+    name: 'Cài đặt',
+    icon: 'i-lucide-settings',
+    path: '/dashboard/settings',
   },
 ]

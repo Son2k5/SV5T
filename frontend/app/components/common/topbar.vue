@@ -4,7 +4,7 @@
       <UButton
         color="neutral"
         variant="ghost"
-        class="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl !p-0 text-[#64748B] transition-colors duration-200 hover:bg-blue-50 hover:text-[#2563EB]"
+        class="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl !p-0 text-white/90 transition-colors duration-200 hover:bg-white/15 hover:text-white"
         :icon="sidebarOpen ? 'i-lucide-panel-right-open' : 'i-lucide-panel-left-open'"
         :ui="{ leadingIcon: 'size-5 shrink-0' }"
         aria-label="Toggle sidebar"
@@ -19,29 +19,31 @@
         :ui="{ base: 'h-10 rounded-2xl bg-[#F8FAFC] border-[#E5E7EB] text-[#1E293B]' }"
       />
 
-      <div class="ml-auto hidden items-center gap-1 sm:flex">
+      <div class="ml-auto flex items-center gap-1">
+        <CommonNotificationBell />
         <UButton
           v-for="action in headerActions"
           :key="action.icon"
           color="neutral"
           variant="ghost"
-          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl !p-0 text-[#64748B] transition-colors duration-200 hover:bg-blue-50 hover:text-[#2563EB]"
+          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl !p-0 text-white/90 transition-colors duration-200 hover:bg-white/15 hover:text-white"
           :icon="action.icon"
           :ui="{ leadingIcon: 'size-5 shrink-0' }"
           :aria-label="action.label"
+          :to="action.to"
         />
       </div>
 
       <UDropdownMenu :items="profileActions">
         <UButton
-          class="cursor-pointer rounded-2xl   px-2 py-3  hover:bg-[#F8FAFC]"
+          class="inline-flex h-10 max-w-[13rem] cursor-pointer items-center rounded-xl px-2 py-0 transition-colors duration-200 hover:bg-white/15"
           color="neutral"
           variant="ghost"
         >
           <UUser
             :avatar="{ src: profile?.avatar ?? 'profilePlaceholder.png' }"
             :name="profile?.fullName ?? 'Profile Name'"
-            :ui="{ name: 'hidden md:block text-[#1E293B] font-semibold', description: 'hidden md:block text-[#64748B]' }"
+            :ui="{ root: 'min-w-0', name: 'hidden truncate md:block text-white font-semibold', description: 'hidden truncate md:block text-blue-100' }"
           />
         </UButton>
         <template #user-profile>
@@ -73,16 +75,13 @@ const handleLogOut = async () => {
 
 const headerActions = [
   {
-    icon: 'i-lucide-bell',
-    label: 'Thông báo',
-  },
-  {
     icon: 'i-lucide-message-square',
     label: 'Tin nhắn',
   },
   {
     icon: 'i-lucide-settings',
     label: 'Cài đặt',
+    to: '/dashboard/settings',
   },
 ]
 
@@ -95,6 +94,11 @@ const profileActions = ref<DropdownMenuItem[]>([
     label: 'Thông Tin Cá Nhân',
     icon: 'i-heroicons-user-solid',
     onSelect: () => navigateTo('/dashboard/me/edit'),
+  },
+  {
+    label: 'Cài đặt',
+    icon: 'i-lucide-settings',
+    onSelect: () => navigateTo('/dashboard/settings'),
   },
   {
     label: 'Đăng Xuất',

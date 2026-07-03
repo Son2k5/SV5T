@@ -16,7 +16,10 @@ export const MissingPasswordEndpoint = () => endpoint('/user/auth/missing_passwo
 export const ResetPasswordEndpoint = () => endpoint('/user/auth/reset_password')
 export const VerifyResetEndpoint = () => endpoint('/user/auth/verify_reset_token')
 
+export const PublicSystemSettingsEndpoint = () => endpoint('/public/settings')
+
 export const GetCriteriaEndpoint = () => endpoint('/user/campaign/get_campaign')
 
 export const CurrentUserEndpoint = () => endpoint('/user/profile')
 export const CurrentUserAvatarEndpoint = () => endpoint('/user/profile/avatar')
+export const CurrentUserPasswordEndpoint = () => endpoint('/user/profile/password')

@@ -6,17 +6,20 @@
     </div>
     <div class="w-full min-w-0">
       <CommonTopbar />
+      <CommonMaintenanceBanner />
       <main class="mx-auto min-h-screen w-full max-w-[1440px] px-3 py-5 sm:px-5 lg:px-8">
         <slot />
       </main>
       <CommonFooter />
     </div>
+    <ChatUserChatWidget v-if="settings.showChatWidget" />
   </div>
 </template>
 
 <script setup lang="ts">
 const { sidebarOpen, toggleSidebarOpen } = useSidebar()
 const { isMobile } = useMobile()
+const { settings } = useUserSettings()
 
 const handleKeyboardToggleSidebar = (e: KeyboardEvent) => {
   const target = e.target as HTMLElement

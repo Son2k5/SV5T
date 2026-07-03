@@ -3,7 +3,7 @@ import { useAdminAccess } from '~/composables/admin/useAdminAccess'
 export default defineNuxtRouteMiddleware(async (to) => {
   const { ensureAccessToken, hasIdleExpired, logOut } = useAuth()
 
-  if (to.path.startsWith('/dashboard')) {
+  if (to.path.startsWith('/dashboard') || to.path === '/notifications') {
     if (import.meta.client && hasIdleExpired()) {
       await logOut({ redirect: false, reason: 'idle' })
       return navigateTo('/login?error=session_idle')
