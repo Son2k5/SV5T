@@ -70,10 +70,7 @@ public class SmtpPasswordCryptoService {
     private SecretKeySpec secretKey() {
         String secret = environment.getProperty("app.notification.encryption-key");
         if (!StringUtils.hasText(secret)) {
-            secret = environment.getProperty("app.jwt.secret");
-        }
-        if (!StringUtils.hasText(secret)) {
-            throw new IllegalStateException("Missing app.notification.encryption-key or app.jwt.secret");
+            throw new IllegalStateException("Missing app.notification.encryption-key");
         }
 
         try {

@@ -4,6 +4,8 @@ import type {
   CampaignStatus,
   Criteria,
   CriteriaForm,
+  CriteriaTemplate,
+  CriteriaTemplateForm,
   EvidenceType,
   Standard,
 } from '~/types/admin'
@@ -136,6 +138,33 @@ export const useAdminCriteria = () => {
     })
   }
 
+  const fetchCriteriaTemplates = async () => {
+    const response = await request<CriteriaTemplate[]>('/admin/criteria-templates')
+    return response.data
+  }
+
+  const createCriteriaTemplate = (form: CriteriaTemplateForm) => {
+    return request<CriteriaTemplate>('/admin/criteria-templates', {
+      method: 'POST',
+      body: form,
+    })
+  }
+
+  const updateCriteriaTemplate = (publicId: string, form: CriteriaTemplateForm) => {
+    assertPublicId(publicId, 'publicId')
+    return request<CriteriaTemplate>(`/admin/criteria-templates/${publicId}`, {
+      method: 'PUT',
+      body: form,
+    })
+  }
+
+  const deleteCriteriaTemplate = (publicId: string) => {
+    assertPublicId(publicId, 'publicId')
+    return request<undefined>(`/admin/criteria-templates/${publicId}`, {
+      method: 'DELETE',
+    })
+  }
+
   return {
     fetchCampaigns,
     fetchStandards,
@@ -149,5 +178,9 @@ export const useAdminCriteria = () => {
     deleteCriteria,
     reorderCriteria,
     updateCriteriaRequirement,
+    fetchCriteriaTemplates,
+    createCriteriaTemplate,
+    updateCriteriaTemplate,
+    deleteCriteriaTemplate,
   }
 }

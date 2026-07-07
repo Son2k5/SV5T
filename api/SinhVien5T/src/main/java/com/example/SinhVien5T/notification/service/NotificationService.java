@@ -84,7 +84,7 @@ public class NotificationService {
             sendEmail(settings, recipient, title, content);
         }
         if (shouldSendRealtime(template.getChannel(), settings)) {
-            sendRealtime(recipient.getId(), saved);
+            sendRealtime(recipient, saved);
         }
 
         return CompletableFuture.completedFuture(null);
@@ -163,12 +163,12 @@ public class NotificationService {
         }
     }
 
-    private void sendRealtime(Long userId, Notification notification) {
+    private void sendRealtime(User recipient, Notification notification) {
         RealtimeNotificationPayload payload = new RealtimeNotificationPayload(
                 toDto(notification),
-                getUnreadCount(userId)
+                getUnreadCount(recipient.getId())
         );
-        realtimePublisher.publish(userId, payload);
+        realtimePublisher.publish(recipient.getPublicId(), payload);
     }
 
     private boolean shouldSendEmail(

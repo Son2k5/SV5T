@@ -30,25 +30,25 @@ public class RealtimeNotificationPublisher {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public void publish(Long userId, RealtimeNotificationPayload payload) {
+    public void publish(String userPublicId, RealtimeNotificationPayload payload) {
         try {
             String payloadJson = objectMapper.writeValueAsString(payload);
             if (redisRealtimeEnabled) {
-                stringRedisTemplate.convertAndSend(channel(userId), payloadJson);
+                stringRedisTemplate.convertAndSend(channel(userPublicId), payloadJson);
                 return;
             }
 
-            sendDirectly(userId, payloadJson);
+            sendDirectly(userPublicId, payloadJson);
         } catch (Exception ex) {
-            log.warn("Could not publish realtime notification for userId={}", userId, ex);
+            log.warn("Could not publish realtime notification for userPublicId={}", userPublicId, ex);
         }
     }
 
-    private String channel(Long userId) {
-        return "notifications:" + userId;
+    private String channel(String userPublicId) {
+        return "notifications:" + userPublicId;
     }
 
-    private void sendDirectly(Long userId, String payloadJson) {
-        messagingTemplate.convertAndSend("/topic/notifications/" + userId, payloadJson);
+    private void sendDirectly(String userPublicId, String payloadJson) {
+        messagingTemplate.convertAndSend("/topic/notifications/" + userPublicId, payloadJson);
     }
 }

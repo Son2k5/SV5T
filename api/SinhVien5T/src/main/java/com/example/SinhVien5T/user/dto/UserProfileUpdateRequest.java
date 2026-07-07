@@ -30,7 +30,7 @@ public class UserProfileUpdateRequest {
     private Gender gender;
 
     @NotBlank(message = "Số CCCD/CMND là bắt buộc")
-    @Pattern(regexp = "^(\\d{9}|\\d{12})$", message = "Số CCCD/CMND phải gồm 9 hoặc 12 chữ số")
+    @Pattern(regexp = "^(\\d{9}|\\d{12}|\\*{5}\\d{4}|\\*{8}\\d{4})$", message = "Số CCCD/CMND không hợp lệ")
     private String identityCardNumber;
 
     @NotBlank(message = "Dân tộc là bắt buộc")

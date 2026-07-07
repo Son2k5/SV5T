@@ -63,7 +63,7 @@
 
     <div class="w-full min-w-0">
       <header class="sticky top-0 z-40 border-b border-blue-200/40 bg-gradient-to-b from-[#60A5FA] to-[#2563EB] px-3 py-3 shadow-[0_8px_28px_rgba(15,23,42,0.06)] sm:px-5 lg:px-8">
-        <div class="mx-auto flex h-12 max-w-[1440px] items-center gap-3">
+        <div class="mx-auto flex h-12 max-w-[1680px] items-center gap-3">
           <UButton
             color="neutral"
             variant="ghost"
@@ -101,7 +101,7 @@
         </div>
       </header>
 
-      <main class="mx-auto min-h-screen w-full max-w-[1440px] px-3 py-5 sm:px-5 lg:px-8">
+      <main class="mx-auto min-h-screen w-full max-w-[1680px] px-3 py-5 sm:px-5 lg:px-8">
         <div
           class="mb-5 text-sm text-[#64748B]"
           aria-label="Breadcrumb"

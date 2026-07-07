@@ -28,6 +28,6 @@ export const useAdminAccess = () => {
       : null
   })
 
-  const isAdmin = computed(() => role.value === 'ADMIN')
+  const isAdmin = computed(() => role.value === 'ADMIN' || role.value === 'MENTOR')
   return { role, isAdmin }
 }

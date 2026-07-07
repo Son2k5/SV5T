@@ -23,6 +23,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 @Component
 @RequiredArgsConstructor
@@ -70,11 +72,36 @@ public class DeadlineReminderScheduler {
     }
 
     private void sendCampaignReminders(Campaign campaign, List<User> users, LocalDate today) {
+        if (users.isEmpty()) {
+            return;
+        }
+
+        List<Long> userIds = users.stream().map(User::getId).toList();
+
+        Set<Long> submittedUserIds = new HashSet<>(
+                applicationRecordRepository.findSubmittedUserIds(
+                        userIds,
+                        campaign.getId(),
+                        List.of(ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED)
+                )
+        );
+
+        Set<Long> alreadyRemindedUserIds = new HashSet<>(
+                notificationRepository.findRemindedUserIds(
+                        userIds,
+                        NotificationType.DEADLINE_REMINDER,
+                        RELATED_ENTITY_CAMPAIGN,
+                        campaign.getPublicId(),
+                        today.atStartOfDay(),
+                        today.atTime(LocalTime.MAX)
+                )
+        );
+
         for (User user : users) {
-            if (hasSubmittedApplication(user.getId(), campaign.getId())) {
+            if (submittedUserIds.contains(user.getId())) {
                 continue;
             }
-            if (alreadyRemindedToday(user.getId(), campaign.getPublicId(), today)) {
+            if (alreadyRemindedUserIds.contains(user.getId())) {
                 continue;
             }
 
@@ -90,27 +117,6 @@ public class DeadlineReminderScheduler {
                     campaign.getPublicId()
             ));
         }
-    }
-
-    private boolean hasSubmittedApplication(Long userId, Long campaignId) {
-        return applicationRecordRepository.existsByUserIdAndCampaignIdAndStatusIn(
-                userId,
-                campaignId,
-                List.of(ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED)
-        );
-    }
-
-    private boolean alreadyRemindedToday(Long userId, String campaignPublicId, LocalDate today) {
-        LocalDateTime from = today.atStartOfDay();
-        LocalDateTime to = today.atTime(LocalTime.MAX);
-        return notificationRepository.existsByRecipientIdAndTypeAndRelatedEntityTypeAndRelatedEntityIdAndCreatedAtBetween(
-                userId,
-                NotificationType.DEADLINE_REMINDER,
-                RELATED_ENTITY_CAMPAIGN,
-                campaignPublicId,
-                from,
-                to
-        );
     }
 
     private String displayName(User user) {

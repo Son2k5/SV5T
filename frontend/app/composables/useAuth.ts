@@ -66,13 +66,18 @@ const createAuthError = (message = SESSION_EXPIRED_MESSAGE): AuthClientError =>
 const decodeJwtPayload = (token: string) => {
   if (typeof atob !== 'function') return null
 
-  const [, payload] = token.split('.')
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+
+  const payload = parts[1]
   if (!payload) return null
 
   try {
     const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
     const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=')
-    return JSON.parse(atob(padded)) as { exp?: number }
+    const decoded = JSON.parse(atob(padded)) as { exp?: number }
+    if (!decoded || typeof decoded.exp !== 'number') return null
+    return decoded
   }
   catch {
     return null

@@ -476,7 +476,7 @@ const props = withDefaults(
   }>(),
   {
     readonly: false,
-  }
+  },
 )
 
 const emit = defineEmits<{

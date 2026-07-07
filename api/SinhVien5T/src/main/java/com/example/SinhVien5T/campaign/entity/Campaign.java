@@ -75,6 +75,7 @@ public class Campaign {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
     @EqualsAndHashCode.Exclude
     @ToString.Exclude

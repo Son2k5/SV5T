@@ -1,9 +1,9 @@
-export type NotificationType =
-  | 'SUBMISSION_RECEIVED'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'DEADLINE_REMINDER'
-  | 'SYSTEM_ALERT'
+export type NotificationType
+  = | 'SUBMISSION_RECEIVED'
+    | 'APPROVED'
+    | 'REJECTED'
+    | 'DEADLINE_REMINDER'
+    | 'SYSTEM_ALERT'
 
 export type NotificationChannel = 'EMAIL' | 'REALTIME' | 'BOTH'
 

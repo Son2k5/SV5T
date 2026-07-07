@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,4 +56,11 @@ public interface ApplicationRecordRepository extends JpaRepository<ApplicationRe
     List<ApplicationRecord> findByUserIdAndStatus(Long userId, ApplicationStatus status);
 
     long countByCampaignIdAndStatus(Long campaignId, ApplicationStatus status);
+
+    @Query("SELECT a.user.id FROM ApplicationRecord a WHERE a.user.id IN :userIds AND a.campaign.id = :campaignId AND a.status IN :statuses")
+    List<Long> findSubmittedUserIds(
+            @Param("userIds") Collection<Long> userIds,
+            @Param("campaignId") Long campaignId,
+            @Param("statuses") Collection<ApplicationStatus> statuses
+    );
 }

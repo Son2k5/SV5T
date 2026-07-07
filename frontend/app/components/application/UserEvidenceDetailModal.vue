@@ -128,13 +128,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { ApplicationRecordResponse, CriteriaDTO } from '~/types/applicationRecord'
+import type { ApplicationRecordResponse, CriteriaDTO, StandardDTO } from '~/types/applicationRecord'
 import { useCurrentUser } from '~/composables/profile/useCurrentUser'
+import type { ProfileData } from '~/types/profile'
 
 const props = defineProps<{
   open: boolean
   application: ApplicationRecordResponse | null
-  tree: any[]
+  tree: StandardDTO[]
   loading?: boolean
   error?: string
 }>()
@@ -143,7 +144,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
 
-const profile = ref<any>(null)
+const profile = ref<ProfileData | null>(null)
 
 // Fetch current user details on mount
 onMounted(async () => {
@@ -158,8 +159,8 @@ onMounted(async () => {
   }
 })
 
-const selectedCriteria = ref<any | null>(null)
-const selectedStandard = ref<any | null>(null)
+const selectedCriteria = ref<CriteriaDTO | null>(null)
+const selectedStandard = ref<StandardDTO | null>(null)
 
 // Clear selection and select first available evidence on modal open
 watch(
@@ -241,7 +242,7 @@ watch(
   { deep: true },
 )
 
-function handleSelectCriteria(data: { criteria: any, standard: any }) {
+function handleSelectCriteria(data: { criteria: CriteriaDTO, standard: StandardDTO }) {
   selectedCriteria.value = data.criteria
   selectedStandard.value = data.standard
 }

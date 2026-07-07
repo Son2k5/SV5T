@@ -3,6 +3,8 @@ import { useAuth } from '~/composables/useAuth'
 import { useNotifications } from '~/composables/useNotifications'
 
 type TokenPayload = {
+  sub?: string
+  publicId?: string
   userId?: number | string
   exp?: number
 }
@@ -18,7 +20,7 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 let reconnectAttempts = 0
 let desiredConnection = false
-let subscribedUserId: number | null = null
+let subscribedUserPublicId: string | null = null
 let reconnectHandler: (() => void) | null = null
 
 export const useNotificationConnection = () => {
@@ -42,9 +44,9 @@ export const useNotificationConnection = () => {
       return
     }
 
-    const userId = getUserId(accessToken.value)
-    if (!userId) {
-      connectionError.value = 'Missing notification user id'
+    const userPublicId = getUserPublicId(accessToken.value)
+    if (!userPublicId) {
+      connectionError.value = 'Missing notification user public id'
       scheduleReconnect()
       return
     }
@@ -56,7 +58,7 @@ export const useNotificationConnection = () => {
 
     socket.onopen = () => {
       sendFrame('CONNECT', {
-        Authorization: `Bearer ${accessToken.value}`,
+        'Authorization': `Bearer ${accessToken.value}`,
         'accept-version': '1.2',
         'heart-beat': '10000,10000',
       })
@@ -64,7 +66,7 @@ export const useNotificationConnection = () => {
 
     socket.onmessage = (event) => {
       if (typeof event.data !== 'string' || event.data === '\n') return
-      parseFrames(event.data).forEach((frame) => handleFrame(frame, userId))
+      parseFrames(event.data).forEach(frame => handleFrame(frame, userPublicId))
     }
 
     socket.onerror = () => {
@@ -75,7 +77,7 @@ export const useNotificationConnection = () => {
       stopHeartbeat()
       connected.value = false
       connecting.value = false
-      subscribedUserId = null
+      subscribedUserPublicId = null
       socket = null
       if (desiredConnection) scheduleReconnect()
     }
@@ -87,7 +89,7 @@ export const useNotificationConnection = () => {
     stopHeartbeat()
     connected.value = false
     connecting.value = false
-    subscribedUserId = null
+    subscribedUserPublicId = null
 
     if (socket && socket.readyState === WebSocket.OPEN) {
       sendFrame('DISCONNECT', { receipt: 'disconnect' })
@@ -114,20 +116,20 @@ export const useNotificationConnection = () => {
         return
       }
 
-      const userId = getUserId(token)
-      const previousUserId = getUserId(previousToken)
-      if (desiredConnection && userId && previousUserId && userId !== previousUserId) {
+      const userPublicId = getUserPublicId(token)
+      const previousUserPublicId = getUserPublicId(previousToken)
+      if (desiredConnection && userPublicId && previousUserPublicId && userPublicId !== previousUserPublicId) {
         reconnect()
       }
     })
   }
 
-  const handleFrame = (frame: StompFrame, userId: number) => {
+  const handleFrame = (frame: StompFrame, userPublicId: string) => {
     if (frame.command === 'CONNECTED') {
       connected.value = true
       connecting.value = false
       reconnectAttempts = 0
-      subscribe(userId)
+      subscribe(userPublicId)
       startHeartbeat()
       void fetchUnreadCount().catch(() => {
         // Realtime still works if the count refresh fails once.
@@ -147,15 +149,15 @@ export const useNotificationConnection = () => {
     }
   }
 
-  const subscribe = (userId: number) => {
-    if (subscribedUserId === userId) return
+  const subscribe = (userPublicId: string) => {
+    if (subscribedUserPublicId === userPublicId) return
 
     sendFrame('SUBSCRIBE', {
-      id: `notifications-${userId}`,
-      destination: `/topic/notifications/${userId}`,
+      id: `notifications-${userPublicId}`,
+      destination: `/topic/notifications/${userPublicId}`,
       ack: 'auto',
     })
-    subscribedUserId = userId
+    subscribedUserPublicId = userPublicId
   }
 
   return {
@@ -220,12 +222,9 @@ const parseRealtimePayload = (body: string): RealtimeNotificationPayload | null 
   }
 }
 
-const getUserId = (token: string | null): number | null => {
+const getUserPublicId = (token: string | null): string | null => {
   const payload = readTokenPayload(token)
-  if (!payload?.userId) return null
-
-  const userId = Number(payload.userId)
-  return Number.isFinite(userId) && userId > 0 ? userId : null
+  return payload?.sub || payload?.publicId || null
 }
 
 const readTokenPayload = (token: string | null): TokenPayload | null => {

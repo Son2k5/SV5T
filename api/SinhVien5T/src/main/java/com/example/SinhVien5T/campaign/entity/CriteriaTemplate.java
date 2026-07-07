@@ -1,30 +1,25 @@
 package com.example.SinhVien5T.campaign.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SQLRestriction;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(
-        name = "standard",
+        name = "criteria_template",
         indexes = {
-                @Index(name = "idx_standard_public_id", columnList = "public_id"),
-                @Index(name = "idx_standard_campaign_id", columnList = "campaign_id")
+                @Index(name = "idx_criteria_template_public_id", columnList = "public_id")
         }
 )
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Standard {
+public class CriteriaTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,30 +31,20 @@ public class Standard {
     @Column(name = "name", nullable = false, length = 500)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campaign_id")
-    @JsonIgnore // tránh vòng lặp vô tăng khi map Object -> JSON
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Campaign campaign;
-
     @Column(columnDefinition = "TEXT")
     private String description;
 
     @Builder.Default
-    @Column(name = "is_group", nullable = false)
-    private Boolean isGroup = false;
+    @Column(name = "is_mandatory")
+    private Boolean isMandatory = true;
 
+    @Column(name = "evidence_type", length = 50)
     @Enumerated(EnumType.STRING)
-    @Column(name = "level", length = 30)
-    private Level level;
+    private EvidenceType evidenceType;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "standard")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @SQLRestriction("parent_id IS NULL")
-    private Set<Criteria> criteriaList = new LinkedHashSet<>();
+    @Column(name = "level", length = 30)
+    @Enumerated(EnumType.STRING)
+    private Level level;
 
     @PrePersist
     public void prePersist() {
@@ -67,5 +52,4 @@ public class Standard {
             publicId = UUID.randomUUID().toString();
         }
     }
-
 }

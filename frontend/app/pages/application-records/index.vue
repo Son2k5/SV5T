@@ -161,7 +161,6 @@
           />
         </div>
       </div>
-
     </section>
 
     <!-- Mode Selector Pop-up Modal -->
@@ -170,7 +169,6 @@
       @update:open="isModeSelectorOpen = $event"
       @confirm="onModeSelected"
     />
-
   </main>
 </template>
 

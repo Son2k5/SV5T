@@ -167,6 +167,7 @@ public class UserService {
         String studentCode = StringUtils.trimToNull(request.getStudentCode());
 
         if (identityCardNumber != null
+                && !identityCardNumber.contains("*")
                 && userDetailRepository.existsByIdentityCardNumberAndUserIdNot(identityCardNumber, user.getId())) {
             log.warn("Profile conflict: identityCardNumber exists for userId={}", user.getId());
             throw new UserProfileConflictException(UserErrorMessages.IDENTITY_CARD_EXISTS);
@@ -193,7 +194,12 @@ public class UserService {
         detail.setFullName(StringUtils.trimToNull(request.getFullName()));
         detail.setBirthDay(request.getBirthDay());
         detail.setGender(request.getGender());
-        detail.setIdentityCardNumber(StringUtils.trimToNull(request.getIdentityCardNumber()));
+        
+        String inputCard = StringUtils.trimToNull(request.getIdentityCardNumber());
+        if (inputCard != null && !inputCard.contains("*")) {
+            detail.setIdentityCardNumber(inputCard);
+        }
+
         detail.setEthnicity(StringUtils.trimToNull(request.getEthnicity()));
         detail.setSchool(StringUtils.trimToNull(request.getSchool()));
         detail.setMajor(StringUtils.trimToNull(request.getMajor()));

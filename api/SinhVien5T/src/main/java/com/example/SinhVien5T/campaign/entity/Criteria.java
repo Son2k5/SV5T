@@ -54,6 +54,7 @@ public class Criteria {
     @ToString.Exclude
     private Criteria parent;
 
+    @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

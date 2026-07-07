@@ -1,365 +1,236 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header Section -->
-    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center ">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-          Quản lý Tiêu chí
-        </h1>
-        <p class="mt-1 text-sm text-slate-500">
-          Thiết lập nhóm tiêu chuẩn (standard) và bộ tiêu chí đạt / không đạt của từng đợt xét duyệt.
-        </p>
-      </div>
-    </div>
-
-    <!-- Campaign Selector Card -->
-    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3.5 sm:flex-row sm:items-center">
-      <div class="flex items-center gap-2.5 text-sm font-semibold text-slate-600 shrink-0">
-        <UIcon
-          name="i-lucide-calendar-range"
-          class="text-slate-400 size-4.5"
+  <div class="space-y-4">
+    <!-- Hàng 1: Tiêu đề + Đợt xét duyệt + Thư viện mẫu -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-xl font-bold text-slate-900 tracking-tight whitespace-nowrap">
+        Quản lý Tiêu chí
+      </h1>
+      <div class="flex items-center gap-3 flex-1 justify-end min-w-0">
+        <USelect
+          v-model="selectedCampaignPublicId"
+          :items="campaignOptions"
+          placeholder="Chọn đợt xét duyệt..."
+          class="w-full min-w-[220px] max-w-[340px]"
+          :ui="{ base: 'h-10 rounded-xl bg-slate-50/50 border-slate-200' }"
         />
-        <span>Chọn đợt xét duyệt:</span>
-      </div>
-      <USelect
-        v-model="selectedCampaignPublicId"
-        :items="campaignOptions"
-        placeholder="Chọn đợt xét duyệt..."
-        class="w-full max-w-md"
-        :ui="{ base: 'h-10 rounded-xl bg-slate-50/50 border-slate-200' }"
-      />
-    </div>
-
-    <!-- Tab Switcher when campaign has BOTH modes -->
-    <div
-      v-if="campaign && campaign.isGroup === 'BOTH' && !campaignLoading"
-      class="flex justify-start"
-    >
-      <div class="flex gap-1.5 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 shadow-2xs">
-        <button
-          type="button"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer"
-          :class="!activeTabIsGroup
-            ? 'bg-white text-blue-600 shadow-sm border border-slate-200/20'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/40'"
-          @click="activeTabIsGroup = false"
-        >
-          <UIcon
-            name="i-lucide-user"
-            class="size-4"
-          />
-          Tiêu chuẩn Cá nhân
-        </button>
-        <button
-          type="button"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer"
-          :class="activeTabIsGroup
-            ? 'bg-white text-blue-600 shadow-sm border border-slate-200/20'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/40'"
-          @click="activeTabIsGroup = true"
-        >
-          <UIcon
-            name="i-lucide-users"
-            class="size-4"
-          />
-          Tiêu chuẩn Tập thể
-        </button>
+        <UButton
+          color="info"
+          icon="i-lucide-book-open"
+          label="Thư viện mẫu"
+          class="cursor-pointer font-semibold rounded-xl whitespace-nowrap shrink-0"
+          @click="templateLibraryOpen = true"
+        />
       </div>
     </div>
 
     <div
       v-if="campaignLoading"
-      class="space-y-4"
+      class="space-y-3"
     >
-      <USkeleton class="h-32 w-full rounded-2xl" />
-      <USkeleton class="h-[460px] w-full rounded-2xl" />
+      <USkeleton class="h-10 w-48 rounded-xl" />
+      <USkeleton class="h-10 w-full rounded-xl" />
+      <USkeleton class="h-[420px] w-full rounded-2xl" />
     </div>
 
     <template v-else-if="campaign">
-      <!-- Quick Summary Row -->
-      <section class="grid gap-4 sm:grid-cols-3">
-        <article class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Trạng thái đợt
-            </p>
-            <UBadge
-              class="mt-2.5 rounded-lg font-bold text-xs px-2 py-0.5"
-              :color="campaign.status === 'ACTIVE' ? 'success' : 'neutral'"
-              variant="subtle"
+      <!-- Hàng 2: Tab Cá nhân / Tập thể -->
+      <div
+        v-if="campaign.isGroup === 'BOTH'"
+        class="flex"
+      >
+        <div class="flex gap-1 p-1 bg-slate-100/80 rounded-xl">
+          <button
+            type="button"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+            :class="!activeTabIsGroup
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'"
+            @click="activeTabIsGroup = false"
+          >
+            <UIcon
+              name="i-lucide-user"
+              class="size-3.5"
+            />
+            Tiêu chuẩn Cá nhân
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+            :class="activeTabIsGroup
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'"
+            @click="activeTabIsGroup = true"
+          >
+            <UIcon
+              name="i-lucide-users"
+              class="size-3.5"
+            />
+            Tiêu chuẩn Tập thể
+          </button>
+        </div>
+      </div>
+
+      <!-- Hàng 3: Filter cấp + các pill nhóm tiêu chuẩn -->
+      <div class="flex items-center gap-3">
+        <USelect
+          v-if="isCampaignMultiLevel && standards.length > 0"
+          v-model="selectedLevelFilter"
+          :items="filterOptions"
+          placeholder="Lọc theo cấp..."
+          class="w-[150px] shrink-0"
+          :ui="{ base: 'h-9 rounded-lg bg-slate-50/50 border-slate-200 text-xs' }"
+        />
+
+        <div
+          v-if="isCampaignMultiLevel && standards.length > 0"
+          class="h-6 w-px bg-slate-200 shrink-0"
+        />
+
+        <div class="flex items-center gap-2 overflow-x-auto flex-1 min-w-0 py-0.5">
+          <button
+            v-for="standard in filteredStandards"
+            :key="standard.publicId"
+            type="button"
+            class="group flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer shrink-0"
+            :class="selectedStandardId === standard.publicId
+              ? 'bg-blue-600 text-white'
+              : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'"
+            @click="selectedStandardId = standard.publicId"
+          >
+            <span class="truncate max-w-[140px]">{{ standard.name }}</span>
+            <span
+              v-if="isCampaignMultiLevel && standard.level"
+              class="text-[9px] font-bold px-1 py-0.5 rounded-sm shrink-0"
+              :class="selectedStandardId === standard.publicId ? 'bg-white/20' : 'bg-slate-100 text-slate-500'"
             >
-              {{ campaign.status === 'ACTIVE' ? 'Đang mở' : campaign.status }}
-            </UBadge>
-          </div>
-          <UIcon
-            name="i-lucide-activity"
-            class="size-7 text-slate-300"
+              {{ getLevelLabel(standard.level) }}
+            </span>
+          </button>
+
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-plus"
+            class="size-8 rounded-full cursor-pointer shrink-0"
+            aria-label="Thêm nhóm tiêu chuẩn"
+            @click="openCreateStandard"
           />
-        </article>
+        </div>
+      </div>
 
-        <article class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Nhóm tiêu chuẩn (Standards)
-            </p>
-            <p class="mt-1 text-2xl font-bold text-slate-900">
-              {{ standards.length }}
-            </p>
-          </div>
-          <UIcon
-            name="i-lucide-layers-2"
-            class="size-7 text-slate-300"
+      <CommonPageEmpty
+        v-if="standards.length && !filteredStandards.length"
+        title="Không tìm thấy kết quả"
+        desc="Không có nhóm tiêu chuẩn nào ở cấp này."
+        class="py-6 border border-dashed border-slate-200 rounded-xl"
+      />
+
+      <CommonPageEmpty
+        v-if="!standards.length"
+        title="Chưa có nhóm tiêu chuẩn"
+        desc="Tạo standard trước để thêm các tiêu chí con."
+        class="py-6 border border-dashed border-slate-200 rounded-xl"
+      >
+        <UButton
+          color="info"
+          icon="i-lucide-plus"
+          label="Tạo standard mới"
+          class="cursor-pointer rounded-lg text-xs"
+          @click="openCreateStandard"
+        />
+      </CommonPageEmpty>
+
+      <!-- Hàng: "Tiêu chí thuộc nhóm X" + Sửa nhóm + Xóa nhóm + Thêm tiêu chí (đẩy phải) -->
+      <div
+        v-if="selectedStandardId"
+        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3"
+      >
+        <h2 class="text-sm text-slate-700">
+          Tiêu chí thuộc nhóm <span class="font-semibold text-blue-600">{{ selectedStandard?.name }}</span>
+        </h2>
+        <div class="flex items-center gap-1.5 ml-auto">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-pen-line"
+            size="xs"
+            label="Sửa nhóm"
+            class="rounded-lg cursor-pointer text-slate-500 hover:text-blue-600"
+            @click="openEditStandard(selectedStandard)"
           />
-        </article>
-
-        <article class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Tổng số tiêu chí
-            </p>
-            <p class="mt-1 text-2xl font-bold text-slate-900">
-              {{ campaign.criteriaCount }}
-            </p>
-          </div>
-          <UIcon
-            name="i-lucide-list-checks"
-            class="size-7 text-slate-300"
+          <UButton
+            color="error"
+            variant="ghost"
+            icon="i-lucide-trash-2"
+            size="xs"
+            label="Xóa nhóm"
+            class="rounded-lg cursor-pointer text-slate-500 hover:text-red-600"
+            @click="askDeleteStandard(selectedStandard)"
           />
-        </article>
-      </section>
+          <div class="h-5 w-px bg-slate-200 mx-1" />
+          <UButton
+            color="info"
+            icon="i-lucide-plus"
+            label="Thêm tiêu chí"
+            size="sm"
+            class="cursor-pointer font-semibold rounded-xl"
+            @click="openCreateCriterion"
+          />
+        </div>
+      </div>
 
-      <!-- Main Layout Split -->
-      <section class="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <!-- Sidebar Navigation (Standards) -->
-        <aside class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm h-fit space-y-4">
-          <div class="flex items-center justify-between px-1">
-            <h2 class="font-bold text-slate-900 text-sm tracking-tight flex items-center gap-2">
-              <UIcon
-                name="i-lucide-folder-tree"
-                class="text-slate-400"
-              />
-              Danh mục nhóm
-            </h2>
+      <!-- Criteria grid -->
+      <div v-if="selectedStandardId">
+        <div
+          v-if="criteriaLoading"
+          class="grid gap-3 sm:grid-cols-2"
+        >
+          <USkeleton class="h-28 w-full rounded-2xl" />
+          <USkeleton class="h-28 w-full rounded-2xl" />
+          <USkeleton class="h-28 w-full rounded-2xl" />
+          <USkeleton class="h-28 w-full rounded-2xl" />
+        </div>
 
-            <UButton
-              color="info"
-              variant="ghost"
-              icon="i-lucide-plus"
-              class="size-8 rounded-lg cursor-pointer hover:bg-slate-50"
-              aria-label="Thêm standard"
-              @click="openCreateStandard"
-            />
-          </div>
+        <CommonPageEmpty
+          v-else-if="!criteria.length"
+          title="Nhóm này chưa có tiêu chí"
+          desc="Thêm các tiêu chí cụ thể để cấu hình điều kiện xét duyệt."
+          class="py-12 border border-dashed border-slate-200 rounded-2xl"
+        >
+          <UButton
+            color="info"
+            icon="i-lucide-plus"
+            label="Tạo tiêu chí mới"
+            class="cursor-pointer rounded-xl"
+            @click="openCreateCriterion"
+          />
+        </CommonPageEmpty>
 
-          <!-- Level Filter when campaign is multi-level -->
-          <div
-            v-if="isCampaignMultiLevel && standards.length > 0"
-            class="px-1"
+        <div
+          v-else
+          class="grid gap-3 sm:grid-cols-2"
+        >
+          <article
+            v-for="(criterion, index) in criteria"
+            :key="criterion.publicId"
+            class="rounded-2xl border border-slate-200 bg-white p-4 hover:border-slate-300 transition"
           >
-            <USelect
-              v-model="selectedLevelFilter"
-              :items="filterOptions"
-              placeholder="Lọc theo cấp..."
-              class="w-full"
-              :ui="{ base: 'h-9 rounded-xl bg-slate-50/50 border-slate-200 text-xs' }"
-            />
-          </div>
-
-          <div class="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
-            <button
-              v-for="standard in filteredStandards"
-              :key="standard.publicId"
-              type="button"
-              class="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition border border-transparent cursor-pointer"
-              :class="selectedStandardId === standard.publicId
-                ? 'bg-blue-50/60 border-l-4 border-l-blue-600 border-y-slate-100 border-r-slate-100 text-blue-700 shadow-2xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-50/60 hover:text-slate-900'"
-              @click="selectedStandardId = standard.publicId"
-            >
-              <span
-                class="flex size-8 shrink-0 items-center justify-center rounded-lg"
-                :class="selectedStandardId === standard.publicId ? 'bg-blue-100 text-blue-600' : 'bg-slate-50 text-slate-500'"
-              >
-                <UIcon
-                  name="i-lucide-layers"
-                  class="size-4"
-                />
-              </span>
-              <span class="min-w-0 flex-1">
-                <span class="flex items-center gap-1.5 min-w-0">
-                  <span class="truncate text-sm font-semibold">{{ standard.name }}</span>
-                  <span
-                    v-if="isCampaignMultiLevel && standard.level"
-                    class="shrink-0 inline-flex items-center rounded-sm px-1 py-0.5 text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200"
-                  >
-                    {{ getLevelLabel(standard.level) }}
-                  </span>
-                </span>
-                <span
-                  v-if="standard.description"
-                  class="mt-0.5 block truncate text-[10px] opacity-75"
-                >{{ standard.description }}</span>
-              </span>
-              <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-lucide-pen-line"
-                  size="xs"
-                  class="size-7 rounded-md cursor-pointer text-slate-400 hover:text-slate-600"
-                  aria-label="Sửa standard"
-                  @click.stop="openEditStandard(standard)"
-                />
-                <UButton
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  size="xs"
-                  class="size-7 rounded-md cursor-pointer text-slate-400 hover:text-red-600"
-                  aria-label="Xóa standard"
-                  @click.stop="askDeleteStandard(standard)"
-                />
-              </div>
-            </button>
-
-            <CommonPageEmpty
-              v-if="standards.length && !filteredStandards.length"
-              title="Không tìm thấy kết quả"
-              desc="Không có nhóm tiêu chuẩn nào ở cấp này."
-              class="py-6 border border-dashed border-slate-100 rounded-xl"
-            />
-
-            <CommonPageEmpty
-              v-if="!standards.length"
-              title="Chưa có nhóm tiêu chuẩn"
-              desc="Tạo standard trước để thêm các tiêu chí con."
-              class="py-6 border border-dashed border-slate-100 rounded-xl"
-            >
-              <UButton
-                color="info"
-                icon="i-lucide-plus"
-                label="Tạo standard mới"
-                class="cursor-pointer rounded-lg text-xs"
-                @click="openCreateStandard"
-              />
-            </CommonPageEmpty>
-          </div>
-        </aside>
-
-        <!-- Main Workspace (Criteria Tree) -->
-        <main class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col">
-          <!-- Workspace Header -->
-          <div class="flex flex-col justify-between gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center bg-slate-50/50">
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Danh sách tiêu chí thuộc nhóm
-              </p>
-              <h2 class="mt-0.5 text-base font-bold text-slate-900">
-                {{ selectedStandard?.name || 'Chọn một nhóm tiêu chuẩn' }}
-              </h2>
-            </div>
-
-            <UButton
-              color="info"
-              icon="i-lucide-plus"
-              label="Thêm tiêu chí"
-              :disabled="!selectedStandardId"
-              class="cursor-pointer font-semibold rounded-xl"
-              @click="openCreateCriterion"
-            />
-          </div>
-
-          <!-- Loading state -->
-          <div
-            v-if="criteriaLoading"
-            class="space-y-4 p-5"
-          >
-            <USkeleton class="h-20 w-full rounded-xl" />
-            <USkeleton class="h-20 w-full rounded-xl" />
-            <USkeleton class="h-20 w-full rounded-xl" />
-          </div>
-
-          <!-- Empty list state -->
-          <CommonPageEmpty
-            v-else-if="selectedStandardId && !criteria.length"
-            title="Nhóm này chưa có tiêu chí"
-            desc="Thêm các tiêu chí cụ thể để cấu hình điều kiện xét duyệt."
-            class="py-12"
-          >
-            <UButton
-              color="info"
-              icon="i-lucide-plus"
-              label="Tạo tiêu chí mới"
-              class="cursor-pointer rounded-xl"
-              @click="openCreateCriterion"
-            />
-          </CommonPageEmpty>
-
-          <!-- Criteria Tree Content -->
-          <div
-            v-else-if="selectedStandardId"
-            class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto"
-          >
-            <article
-              v-for="(criterion, index) in criteria"
-              :key="criterion.publicId"
-              class="flex flex-col gap-4 p-5 transition hover:bg-slate-50/30 sm:flex-row sm:items-center group"
-            >
-              <div class="flex min-w-0 flex-1 items-start gap-3.5">
-                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 border border-slate-200/40">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[11px] font-bold text-blue-600">
                   {{ criterion.orderIndex }}
-                </div>
-
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="font-bold text-slate-800 text-sm tracking-tight">
-                      {{ criterion.name }}
-                    </h3>
-                    <UBadge
-                      :color="criterion.mandatory ? 'success' : 'neutral'"
-                      variant="subtle"
-                      class="rounded-md font-bold text-[9px] px-1.5"
-                    >
-                      {{ criterion.mandatory ? 'Bắt buộc' : 'Không bắt buộc' }}
-                    </UBadge>
-                    <UBadge
-                      v-if="criterion.evidenceType !== 'NONE'"
-                      color="info"
-                      variant="subtle"
-                      class="rounded-md font-bold text-[9px] px-1.5"
-                    >
-                      Yêu cầu minh chứng
-                    </UBadge>
-                  </div>
-
-                  <p
-                    v-if="criterion.description"
-                    class="mt-1 text-xs text-slate-400 leading-relaxed"
-                  >
-                    {{ criterion.description }}
-                  </p>
-
-                  <p
-                    v-if="criterion.requiredChildrenCount > 0"
-                    class="mt-1.5 text-[10px] font-semibold text-slate-400 flex items-center gap-1.5"
-                  >
-                    <UIcon
-                      name="i-lucide-info"
-                      class="size-3.5 text-blue-500"
-                    />
-                    Cần đạt tối thiểu {{ criterion.requiredChildrenCount }} tiêu chí con để được tính đạt.
-                  </p>
-                </div>
+                </span>
+                <h3 class="font-bold text-slate-800 text-sm tracking-tight truncate">
+                  {{ criterion.name }}
+                </h3>
               </div>
-
-              <!-- Inline Action controls -->
-              <div class="flex shrink-0 justify-end gap-1 px-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div class="flex items-center gap-0.5 shrink-0">
                 <UButton
                   color="neutral"
                   variant="ghost"
                   icon="i-lucide-arrow-up"
                   :disabled="index === 0 || criterionSaving"
-                  class="size-8 rounded-lg cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                  class="size-7 rounded-lg cursor-pointer text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:pointer-events-none"
                   aria-label="Đưa tiêu chí lên"
                   @click="moveCriterion(criterion, -1)"
                 />
@@ -368,15 +239,56 @@
                   variant="ghost"
                   icon="i-lucide-arrow-down"
                   :disabled="index === criteria.length - 1 || criterionSaving"
-                  class="size-8 rounded-lg cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                  class="size-7 rounded-lg cursor-pointer text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:pointer-events-none"
                   aria-label="Đưa tiêu chí xuống"
                   @click="moveCriterion(criterion, 1)"
                 />
+              </div>
+            </div>
+
+            <p
+              v-if="criterion.description"
+              class="mt-2 ml-9 text-xs text-slate-400 leading-relaxed line-clamp-2"
+            >
+              {{ criterion.description }}
+            </p>
+
+            <p
+              v-if="criterion.requiredChildrenCount > 0"
+              class="mt-2 ml-9 text-[10px] font-semibold text-slate-400 flex items-center gap-1.5"
+            >
+              <UIcon
+                name="i-lucide-info"
+                class="size-3.5 text-blue-500"
+              />
+              Cần đạt tối thiểu {{ criterion.requiredChildrenCount }} tiêu chí con.
+            </p>
+
+            <div class="mt-3 ml-9 flex items-center justify-between">
+              <div class="flex flex-wrap gap-1.5">
+                <UBadge
+                  :color="criterion.mandatory ? 'success' : 'neutral'"
+                  variant="subtle"
+                  class="rounded-md font-bold text-[9px] px-1.5"
+                >
+                  {{ criterion.mandatory ? 'Bắt buộc' : 'Không bắt buộc' }}
+                </UBadge>
+                <UBadge
+                  v-if="criterion.evidenceType !== 'NONE'"
+                  color="info"
+                  variant="subtle"
+                  class="rounded-md font-bold text-[9px] px-1.5"
+                >
+                  Cần minh chứng
+                </UBadge>
+              </div>
+              <div class="flex items-center gap-0.5">
                 <UButton
                   color="neutral"
                   variant="ghost"
                   icon="i-lucide-shield-alert"
-                  class="size-8 rounded-lg cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                  size="xs"
+                  class="size-7 rounded-lg cursor-pointer text-slate-400 hover:text-amber-600"
                   aria-label="Yêu cầu minh chứng"
                   @click="openConfigureRequirement(criterion)"
                 />
@@ -384,7 +296,8 @@
                   color="info"
                   variant="ghost"
                   icon="i-lucide-pen-line"
-                  class="size-8 rounded-lg cursor-pointer hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                  size="xs"
+                  class="size-7 rounded-lg cursor-pointer text-slate-400 hover:text-green-600"
                   aria-label="Sửa tiêu chí"
                   @click="openEditCriterion(criterion)"
                 />
@@ -392,22 +305,80 @@
                   color="error"
                   variant="ghost"
                   icon="i-lucide-trash-2"
-                  class="size-8 rounded-lg cursor-pointer hover:bg-red-50 text-slate-400 hover:text-red-600"
+                  size="xs"
+                  class="size-7 rounded-lg cursor-pointer text-slate-400 hover:text-red-600"
                   aria-label="Xóa tiêu chí"
                   @click="askDeleteCriterion(criterion)"
                 />
               </div>
-            </article>
-          </div>
+            </div>
+          </article>
 
-          <CommonPageEmpty
-            v-else
-            title="Chọn nhóm tiêu chuẩn"
-            desc="Vui lòng nhấp chọn một nhóm tiêu chuẩn ở danh mục bên trái."
-            class="py-16"
-          />
-        </main>
-      </section>
+          <button
+            type="button"
+            class="rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center gap-2 text-slate-400 text-sm font-semibold hover:border-slate-300 hover:text-slate-600 cursor-pointer min-h-[110px]"
+            @click="openCreateCriterion"
+          >
+            <UIcon
+              name="i-lucide-plus"
+              class="size-4"
+            />
+            Thêm tiêu chí mới
+          </button>
+        </div>
+      </div>
+
+      <CommonPageEmpty
+        v-else-if="standards.length > 0"
+        title="Chọn nhóm tiêu chuẩn"
+        desc="Vui lòng nhấp chọn một nhóm tiêu chuẩn ở trên."
+        class="py-16"
+      />
+
+      <!-- Bảng báo cáo nhỏ ở cuối trang -->
+      <div class="rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2 bg-slate-50 border-b border-slate-200">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Thống kê đợt xét duyệt
+          </span>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] items-center gap-2 px-4 py-2.5 border-b border-slate-100">
+          <span class="flex items-center gap-2 text-sm text-slate-600">
+            <UIcon
+              name="i-lucide-activity"
+              class="size-4 text-slate-400"
+            />
+            Trạng thái đợt
+          </span>
+          <UBadge
+            class="rounded-md font-bold text-[10px] px-2 py-0.5"
+            :color="campaign.status === 'ACTIVE' ? 'success' : 'neutral'"
+            variant="subtle"
+          >
+            {{ campaign.status === 'ACTIVE' ? 'Đang mở' : campaign.status }}
+          </UBadge>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] items-center gap-2 px-4 py-2.5 border-b border-slate-100">
+          <span class="flex items-center gap-2 text-sm text-slate-600">
+            <UIcon
+              name="i-lucide-layers-2"
+              class="size-4 text-slate-400"
+            />
+            Nhóm tiêu chuẩn
+          </span>
+          <span class="text-sm font-semibold text-slate-900">{{ standards.length }}</span>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] items-center gap-2 px-4 py-2.5">
+          <span class="flex items-center gap-2 text-sm text-slate-600">
+            <UIcon
+              name="i-lucide-list-checks"
+              class="size-4 text-slate-400"
+            />
+            Tổng số tiêu chí
+          </span>
+          <span class="text-sm font-semibold text-slate-900">{{ campaign.criteriaCount }}</span>
+        </div>
+      </div>
     </template>
 
     <CommonPageEmpty
@@ -488,6 +459,7 @@
     <UModal
       :open="criterionFormOpen"
       :title="editingCriterion ? 'Cập nhật tiêu chí' : 'Thêm tiêu chí'"
+      class="sm:max-w-3xl w-[90vw]"
       scrollable
       @update:open="criterionFormOpen = $event"
     >
@@ -499,6 +471,19 @@
           class="grid gap-4 sm:grid-cols-2"
           @submit="saveCriterion"
         >
+          <UFormField
+            label="Chọn nhanh từ tiêu chí mẫu"
+            name="selectedTemplatePublicId"
+            class="sm:col-span-2"
+          >
+            <USelect
+              v-model="selectedTemplatePublicId"
+              :items="templateOptions"
+              placeholder="-- Chọn tiêu chí mẫu để tự động điền nhanh --"
+              class="w-full"
+            />
+          </UFormField>
+
           <UFormField
             label="Tên tiêu chí"
             name="name"
@@ -615,6 +600,11 @@
       :loading="requirementSaving"
       @submit="submitRequirement"
     />
+
+    <AdminCriteriaTemplatesModal
+      v-model:open="templateLibraryOpen"
+      @change="handleTemplateLibraryChange"
+    />
   </div>
 </template>
 
@@ -628,6 +618,7 @@ import type {
   CriteriaForm,
   EvidenceType,
   Standard,
+  CriteriaTemplate,
 } from '~/types/admin'
 import { getErrorMessage } from '~/utils/errors'
 import { useAdminCampaigns } from '~/composables/admin/useAdminCampaigns'
@@ -652,6 +643,7 @@ const {
   deleteCriteria,
   reorderCriteria,
   updateCriteriaRequirement,
+  fetchCriteriaTemplates,
 } = useAdminCriteria()
 
 // Campaign selection state
@@ -747,6 +739,43 @@ const criterionSaving = ref(false)
 
 const standardFormOpen = ref(false)
 const criterionFormOpen = ref(false)
+
+// Template Library state
+const templateLibraryOpen = ref(false)
+const criteriaTemplates = ref<CriteriaTemplate[]>([])
+const selectedTemplatePublicId = ref<string | undefined>(undefined)
+
+const loadTemplatesForSelect = async () => {
+  try {
+    criteriaTemplates.value = await fetchCriteriaTemplates()
+  }
+  catch {
+    // silently fail
+  }
+}
+
+const templateOptions = computed(() =>
+  criteriaTemplates.value.map(t => ({
+    label: `${t.mandatory ? '[Bắt buộc]' : '[Tự chọn]'} ${t.name}`,
+    value: t.publicId,
+  })),
+)
+
+watch(selectedTemplatePublicId, (newPublicId) => {
+  if (!newPublicId) return
+  const tmpl = criteriaTemplates.value.find(t => t.publicId === newPublicId)
+  if (tmpl) {
+    criterionForm.name = tmpl.name
+    criterionForm.description = tmpl.description || ''
+    criterionForm.evidenceType = tmpl.evidenceType || 'NONE'
+    criterionForm.mandatory = tmpl.mandatory ?? true
+  }
+  selectedTemplatePublicId.value = undefined
+})
+
+const handleTemplateLibraryChange = async () => {
+  await loadTemplatesForSelect()
+}
 const deleteCriterionOpen = ref(false)
 const deleteStandardOpen = ref(false)
 const requirementOpen = ref(false)
@@ -1164,5 +1193,6 @@ const submitRequirement = async (form: { mandatory: boolean, requiredChildrenCou
 onMounted(async () => {
   await loadCampaignsList()
   await load()
+  await loadTemplatesForSelect()
 })
 </script>

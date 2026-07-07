@@ -125,6 +125,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import type { ApplicationRecordResponse, CriteriaDTO, StandardDTO } from '~/types/applicationRecord'
 import { useCurrentUser } from '~/composables/profile/useCurrentUser'
+import type { ProfileData } from '~/types/profile'
 
 const props = defineProps<{
   application: ApplicationRecordResponse | null
@@ -133,9 +134,9 @@ const props = defineProps<{
   error?: string
 }>()
 
-const profile = ref<any>(null)
-const selectedCriteria = ref<any | null>(null)
-const selectedStandard = ref<any | null>(null)
+const profile = ref<ProfileData | null>(null)
+const selectedCriteria = ref<CriteriaDTO | null>(null)
+const selectedStandard = ref<StandardDTO | null>(null)
 
 onMounted(async () => {
   try {
@@ -227,7 +228,7 @@ function syncSelectedCriteria(newTree: StandardDTO[]) {
   }
 }
 
-function handleSelectCriteria(data: { criteria: any, standard: any }) {
+function handleSelectCriteria(data: { criteria: CriteriaDTO, standard: StandardDTO }) {
   selectedCriteria.value = data.criteria
   selectedStandard.value = data.standard
 }

@@ -58,6 +58,10 @@ import com.example.SinhVien5T.notification.dto.NotificationEvent;
 import com.example.SinhVien5T.notification.entity.NotificationType;
 import com.example.SinhVien5T.notification.service.NotificationEventPublisher;
 import com.example.SinhVien5T.user.entity.CustomUserDetails;
+import com.example.SinhVien5T.admin.dto.CriteriaTemplateRequest;
+import com.example.SinhVien5T.admin.dto.CriteriaTemplateResponse;
+import com.example.SinhVien5T.campaign.entity.CriteriaTemplate;
+import com.example.SinhVien5T.campaign.repository.CriteriaTemplateRepository;
 import com.example.SinhVien5T.user.entity.Role;
 import com.example.SinhVien5T.user.entity.User;
 import com.example.SinhVien5T.user.entity.UserDetail;
@@ -105,6 +109,7 @@ public class AdminService {
     private final CachedUserPrincipalService cachedUserPrincipalService;
     private final CacheManager cacheManager;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final CriteriaTemplateRepository criteriaTemplateRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<UserAdminResponse> getUsers(
@@ -1748,5 +1753,72 @@ public class AdminService {
                 )
                 .subCriteriaList(new ArrayList<>())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CriteriaTemplateResponse> getCriteriaTemplates() {
+        return criteriaTemplateRepository.findAllByOrderByNameAsc()
+                .stream()
+                .map(this::toCriteriaTemplateResponse)
+                .toList();
+    }
+
+    @Transactional
+    public CriteriaTemplateResponse createCriteriaTemplate(CriteriaTemplateRequest request, Authentication authentication) {
+        if (criteriaTemplateRepository.existsByNameIgnoreCase(request.name().trim())) {
+            throw new IllegalArgumentException("Tiêu chí mẫu này đã tồn tại");
+        }
+        CriteriaTemplate template = CriteriaTemplate.builder()
+                .name(request.name().trim())
+                .description(request.description())
+                .isMandatory(request.mandatory() == null || request.mandatory())
+                .evidenceType(request.evidenceType())
+                .level(request.level())
+                .build();
+        CriteriaTemplate saved = criteriaTemplateRepository.save(template);
+        audit("CriteriaTemplate", saved.getId(), "CREATE", null, saved.getName(), authentication);
+        return toCriteriaTemplateResponse(saved);
+    }
+
+    @Transactional
+    public CriteriaTemplateResponse updateCriteriaTemplate(String publicId, CriteriaTemplateRequest request, Authentication authentication) {
+        CriteriaTemplate template = criteriaTemplateRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí mẫu"));
+        
+        if (criteriaTemplateRepository.existsByNameIgnoreCaseAndIdNot(request.name().trim(), template.getId())) {
+            throw new IllegalArgumentException("Tiêu chí mẫu với tên này đã tồn tại");
+        }
+
+        String oldValue = template.getName();
+        template.setName(request.name().trim());
+        template.setDescription(request.description());
+        if (request.mandatory() != null) {
+            template.setIsMandatory(request.mandatory());
+        }
+        template.setEvidenceType(request.evidenceType());
+        template.setLevel(request.level());
+
+        CriteriaTemplate saved = criteriaTemplateRepository.save(template);
+        audit("CriteriaTemplate", saved.getId(), "UPDATE", oldValue, saved.getName(), authentication);
+        return toCriteriaTemplateResponse(saved);
+    }
+
+    @Transactional
+    public void deleteCriteriaTemplate(String publicId, Authentication authentication) {
+        CriteriaTemplate template = criteriaTemplateRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí mẫu"));
+        criteriaTemplateRepository.delete(template);
+        audit("CriteriaTemplate", template.getId(), "DELETE", template.getName(), null, authentication);
+    }
+
+    private CriteriaTemplateResponse toCriteriaTemplateResponse(CriteriaTemplate template) {
+        return new CriteriaTemplateResponse(
+                template.getPublicId(),
+                template.getName(),
+                template.getDescription(),
+                template.getIsMandatory(),
+                template.getEvidenceType(),
+                template.getLevel()
+        );
     }
 }

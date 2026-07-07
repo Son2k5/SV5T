@@ -33,7 +33,7 @@ public class UserProfileMapper {
             builder.fullName(detail.getFullName())
                     .birthDay(detail.getBirthDay())
                     .gender(detail.getGender())
-                    .identityCardNumber(detail.getIdentityCardNumber())
+                    .identityCardNumber(maskIdentityCard(detail.getIdentityCardNumber()))
                     .ethnicity(detail.getEthnicity())
                     .school(detail.getSchool())
                     .major(detail.getMajor())
@@ -63,4 +63,8 @@ public class UserProfileMapper {
                 .build();
     }
 
+    private String maskIdentityCard(String raw) {
+        if (raw == null || raw.length() < 4) return raw;
+        return "*".repeat(raw.length() - 4) + raw.substring(raw.length() - 4);
+    }
 }

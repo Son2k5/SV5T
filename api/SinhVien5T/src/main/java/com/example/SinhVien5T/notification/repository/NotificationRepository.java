@@ -7,7 +7,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,5 +42,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             String relatedEntityId,
             LocalDateTime from,
             LocalDateTime to
+    );
+
+    @Query("SELECT n.recipient.id FROM Notification n WHERE n.recipient.id IN :recipientIds AND n.type = :type AND n.relatedEntityType = :relatedEntityType AND n.relatedEntityId = :relatedEntityId AND n.createdAt BETWEEN :from AND :to")
+    List<Long> findRemindedUserIds(
+            @Param("recipientIds") Collection<Long> recipientIds,
+            @Param("type") NotificationType type,
+            @Param("relatedEntityType") String relatedEntityType,
+            @Param("relatedEntityId") String relatedEntityId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
     );
 }

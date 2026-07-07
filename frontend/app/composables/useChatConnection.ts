@@ -45,7 +45,7 @@ export const useChatConnection = () => {
     socket = new WebSocket(chatWebSocketUrl(String(config.public.apiBaseUrl || 'http://localhost:8080')))
     socket.onopen = () => {
       sendFrame('CONNECT', {
-        Authorization: `Bearer ${accessToken.value}`,
+        'Authorization': `Bearer ${accessToken.value}`,
         'accept-version': '1.2',
         'heart-beat': '10000,10000',
       })

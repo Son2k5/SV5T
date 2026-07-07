@@ -108,7 +108,7 @@ public class WebSocketNotificationAuthInterceptor implements ChannelInterceptor 
             throw new MessagingException("Missing websocket user");
         }
 
-        String expectedDestination = NOTIFICATION_TOPIC_PREFIX + user.getId();
+        String expectedDestination = NOTIFICATION_TOPIC_PREFIX + user.getPublicId();
         if (!expectedDestination.equals(destination)) {
             throw new MessagingException("Cannot subscribe to another user's notifications");
         }

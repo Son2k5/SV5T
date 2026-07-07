@@ -110,6 +110,23 @@ export interface CriteriaForm {
   parentPublicId: string | null
 }
 
+export interface CriteriaTemplate {
+  publicId: string
+  name: string
+  description: string | null
+  mandatory: boolean
+  evidenceType: EvidenceType | null
+  level: CampaignLevel | null
+}
+
+export interface CriteriaTemplateForm {
+  name: string
+  description: string
+  mandatory: boolean
+  evidenceType: EvidenceType
+  level: CampaignLevel | null
+}
+
 export interface CriteriaNode extends Criteria {
   children: CriteriaNode[]
 }
@@ -156,11 +173,8 @@ export interface CampaignProgress {
 }
 
 export interface AuditLog {
-  id: number
   entity: string
-  entityId: number | null
   action: string
-  actorId: number | null
   actorEmail: string | null
   oldValue: string | null
   newValue: string | null

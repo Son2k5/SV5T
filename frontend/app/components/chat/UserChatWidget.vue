@@ -66,7 +66,6 @@
             <p class="text-sm font-semibold text-[#334155]">
               Bắt đầu cuộc trò chuyện
             </p>
-            
           </div>
           <div
             v-for="message in userMessages"

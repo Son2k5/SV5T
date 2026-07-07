@@ -26,8 +26,6 @@
       </div>
     </div>
 
-    
-
     <div class="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <CommonPageSection inner-class="!block p-2">
         <nav class="space-y-1">
@@ -591,7 +589,7 @@
             >
               <template #actor-cell="{ row }">
                 <p class="text-sm font-semibold text-[#1E293B]">
-                  {{ row.original.actorEmail || `#${row.original.actorId || '-'}` }}
+                  {{ row.original.actorEmail || 'Hệ thống' }}
                 </p>
               </template>
               <template #createdAt-cell="{ row }">
@@ -610,6 +608,119 @@
                 :total="auditPageData.totalElements"
                 :items-per-page="auditPageData.size"
               />
+            </div>
+          </CommonPageSection>
+
+          <CommonPageSection
+            v-else-if="activeSection === 'advanced'"
+            title="Key value nâng cao"
+            title-icon="i-lucide-database"
+            inner-class="!block"
+          >
+            <div class="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <UButton
+                v-for="module in delegatedModules"
+                :key="module.to"
+                :to="module.to"
+                color="neutral"
+                variant="outline"
+                class="h-full justify-start rounded-xl p-4 text-left"
+              >
+                <div class="flex min-w-0 items-start gap-3">
+                  <UIcon
+                    :name="module.icon"
+                    class="mt-0.5 size-5 shrink-0 text-[#2563EB]"
+                  />
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-bold text-[#1E293B]">
+                      {{ module.title }}
+                    </p>
+                    <p class="mt-1 line-clamp-2 whitespace-normal text-xs font-medium text-[#64748B]">
+                      {{ module.desc }}
+                    </p>
+                  </div>
+                </div>
+              </UButton>
+            </div>
+
+            <div class="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_auto] lg:items-end">
+              <UFormField label="Tìm kiếm">
+                <UInput
+                  v-model="search"
+                  icon="i-lucide-search"
+                  placeholder="Nhập khóa, giá trị hoặc mô tả"
+                />
+              </UFormField>
+              <UFormField label="Nhóm">
+                <USelect
+                  v-model="selectedCategory"
+                  :items="categoryOptions"
+                />
+              </UFormField>
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-rotate-ccw"
+                label="Xóa lọc"
+                @click="resetFilters"
+              />
+            </div>
+
+            <UTable
+              :data="filteredSettings"
+              :columns="columns"
+              :loading="loading"
+              class="w-full"
+            >
+              <template #category-cell="{ row }">
+                <UBadge
+                  color="neutral"
+                  variant="subtle"
+                  class="rounded-full"
+                >
+                  {{ formatCategory(getSettingCategory(row.original.keyName)) }}
+                </UBadge>
+              </template>
+              <template #keyName-cell="{ row }">
+                <code class="rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-[#2563EB]">
+                  {{ row.original.keyName }}
+                </code>
+              </template>
+              <template #value-cell="{ row }">
+                <p class="max-w-md truncate text-sm text-[#334155]">
+                  {{ row.original.value }}
+                </p>
+              </template>
+              <template #description-cell="{ row }">
+                <p class="max-w-md truncate text-sm text-[#64748B]">
+                  {{ row.original.description || '-' }}
+                </p>
+              </template>
+              <template #actions-cell="{ row }">
+                <div class="flex justify-end gap-1">
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-pencil"
+                    aria-label="Sửa cấu hình"
+                    @click="openEdit(row.original)"
+                  />
+                  <UButton
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    aria-label="Xóa cấu hình"
+                    @click="askDelete(row.original)"
+                  />
+                </div>
+              </template>
+            </UTable>
+
+            <div
+              v-if="!loading && filteredSettings.length === 0"
+              class="py-10 text-center text-sm font-medium text-[#64748B]"
+            >
+              Không có cấu hình nào phù hợp.
             </div>
           </CommonPageSection>
         </template>
@@ -1140,13 +1251,10 @@ const exportAuditLogs = () => {
   const logs = auditPageData.value?.content || []
   const escapeCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`
   const rows = [
-    ['id', 'entity', 'entityId', 'action', 'actorId', 'actorEmail', 'oldValue', 'newValue', 'createdAt'],
+    ['entity', 'action', 'actorEmail', 'oldValue', 'newValue', 'createdAt'],
     ...logs.map(log => [
-      log.id,
       log.entity,
-      log.entityId,
       log.action,
-      log.actorId,
       log.actorEmail,
       log.oldValue,
       log.newValue,

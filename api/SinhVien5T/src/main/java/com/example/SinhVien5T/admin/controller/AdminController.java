@@ -9,6 +9,8 @@ import com.example.SinhVien5T.admin.dto.CampaignStatusRequest;
 import com.example.SinhVien5T.admin.dto.CriteriaRequest;
 import com.example.SinhVien5T.admin.dto.CriteriaRequirementRequest;
 import com.example.SinhVien5T.admin.dto.CriteriaResponse;
+import com.example.SinhVien5T.admin.dto.CriteriaTemplateRequest;
+import com.example.SinhVien5T.admin.dto.CriteriaTemplateResponse;
 import com.example.SinhVien5T.admin.dto.DashboardResponse;
 import com.example.SinhVien5T.admin.dto.EvidenceResponse;
 import com.example.SinhVien5T.admin.dto.IdsRequest;
@@ -32,6 +34,7 @@ import com.example.SinhVien5T.campaign.entity.EvidenceStatus;
 import com.example.SinhVien5T.campaign.entity.Level;
 import com.example.SinhVien5T.common.dto.response.ApiResponse;
 import com.example.SinhVien5T.common.entity.AuditLog;
+import com.example.SinhVien5T.admin.dto.AuditLogResponse;
 import com.example.SinhVien5T.common.entity.Permission;
 import com.example.SinhVien5T.user.entity.Role;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -65,7 +68,7 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @GetMapping("/admin/users")
     public ResponseEntity<ApiResponse<PageResponse<UserAdminResponse>>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -77,13 +80,13 @@ public class AdminController {
         return ok("Lấy danh sách người dùng thành công", adminService.getUsers(page, size, keyword, role, active));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @GetMapping("/admin/users/{userPublicId}")
     public ResponseEntity<ApiResponse<UserAdminResponse>> getUser(@PathVariable String userPublicId) {
         return ok("Lấy thông tin người dùng thành công", adminService.getUser(userPublicId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @PostMapping("/admin/users")
     public ResponseEntity<ApiResponse<UserAdminResponse>> createUser(
             @Valid @RequestBody AdminUserCreateRequest request,
@@ -92,7 +95,7 @@ public class AdminController {
         return ok("Tạo người dùng thành công", adminService.createUser(request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @PutMapping("/admin/users/{userPublicId}")
     public ResponseEntity<ApiResponse<UserAdminResponse>> updateUser(
             @PathVariable String userPublicId,
@@ -102,7 +105,7 @@ public class AdminController {
         return ok("Cập nhật người dùng thành công", adminService.updateUser(userPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @PatchMapping("/admin/users/{userPublicId}/role")
     public ResponseEntity<ApiResponse<UserAdminResponse>> changeRole(
             @PathVariable String userPublicId,
@@ -112,7 +115,7 @@ public class AdminController {
         return ok("Cập nhật vai trò thành công", adminService.changeRole(userPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @PatchMapping("/admin/users/{userPublicId}/status")
     public ResponseEntity<ApiResponse<UserAdminResponse>> changeStatus(
             @PathVariable String userPublicId,
@@ -122,7 +125,7 @@ public class AdminController {
         return ok("Cập nhật trạng thái người dùng thành công", adminService.changeStatus(userPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @DeleteMapping("/admin/users/{userPublicId}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable String userPublicId,
@@ -132,7 +135,7 @@ public class AdminController {
         return ok("Xóa người dùng thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @GetMapping("/admin/users/{userPublicId}/history")
     public ResponseEntity<ApiResponse<PageResponse<AuditLog>>> getUserHistory(
             @PathVariable String userPublicId,
@@ -160,7 +163,7 @@ public class AdminController {
         return ok("Lấy thông tin đợt xét chọn thành công", adminService.getCampaign(campaignPublicId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CAMPAIGN_MANAGE')")
     @PostMapping("/admin/campaigns")
     public ResponseEntity<ApiResponse<CampaignResponse>> createCampaign(
             @Valid @RequestBody CampaignRequest request,
@@ -169,7 +172,7 @@ public class AdminController {
         return ok("Tạo đợt xét chọn thành công", adminService.createCampaign(request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CAMPAIGN_MANAGE')")
     @PutMapping("/admin/campaigns/{campaignPublicId}")
     public ResponseEntity<ApiResponse<CampaignResponse>> updateCampaign(
             @PathVariable String campaignPublicId,
@@ -179,7 +182,7 @@ public class AdminController {
         return ok("Cập nhật đợt xét chọn thành công", adminService.updateCampaign(campaignPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CAMPAIGN_MANAGE')")
     @PatchMapping("/admin/campaigns/{campaignPublicId}/status")
     public ResponseEntity<ApiResponse<CampaignResponse>> changeCampaignStatus(
             @PathVariable String campaignPublicId,
@@ -189,7 +192,7 @@ public class AdminController {
         return ok("Cập nhật trạng thái đợt xét chọn thành công", adminService.changeCampaignStatus(campaignPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CAMPAIGN_MANAGE')")
     @DeleteMapping("/admin/campaigns/{campaignPublicId}")
     public ResponseEntity<ApiResponse<Void>> deleteCampaign(
             @PathVariable String campaignPublicId,
@@ -199,13 +202,13 @@ public class AdminController {
         return ok("Xóa đợt xét chọn thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CAMPAIGN_MANAGE')")
     @GetMapping("/admin/campaigns/{campaignPublicId}/stats")
     public ResponseEntity<ApiResponse<CampaignStatsResponse>> getCampaignStats(@PathVariable String campaignPublicId) {
         return ok("Lấy thống kê đợt xét chọn thành công", adminService.getCampaignStats(campaignPublicId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @GetMapping("/admin/campaigns/{campaignPublicId}/standards")
     public ResponseEntity<ApiResponse<List<StandardResponse>>> getStandards(
             @PathVariable String campaignPublicId,
@@ -214,7 +217,7 @@ public class AdminController {
         return ok("Lấy danh sách tiêu chuẩn thành công", adminService.getStandards(campaignPublicId, isGroup));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PostMapping("/admin/campaigns/{campaignPublicId}/standards")
     public ResponseEntity<ApiResponse<StandardResponse>> createStandard(
             @PathVariable String campaignPublicId,
@@ -224,7 +227,7 @@ public class AdminController {
         return ok("Tạo tiêu chuẩn thành công", adminService.createStandard(campaignPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PutMapping("/admin/standards/{standardPublicId}")
     public ResponseEntity<ApiResponse<StandardResponse>> updateStandard(
             @PathVariable String standardPublicId,
@@ -234,7 +237,7 @@ public class AdminController {
         return ok("Cập nhật tiêu chuẩn thành công", adminService.updateStandard(standardPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @DeleteMapping("/admin/standards/{standardPublicId}")
     public ResponseEntity<ApiResponse<Void>> deleteStandard(
             @PathVariable String standardPublicId,
@@ -244,7 +247,7 @@ public class AdminController {
         return ok("Xóa tiêu chuẩn thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PatchMapping("/admin/standards/{standardPublicId}/reorder")
     public ResponseEntity<ApiResponse<Void>> reorderStandard(
             @PathVariable String standardPublicId,
@@ -254,13 +257,13 @@ public class AdminController {
         return ok("Sắp xếp tiêu chuẩn thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @GetMapping("/admin/standards/{standardPublicId}/criteria")
     public ResponseEntity<ApiResponse<List<CriteriaResponse>>> getCriteria(@PathVariable String standardPublicId) {
         return ok("Lấy danh sách tiêu chí thành công", adminService.getCriteria(standardPublicId));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PostMapping("/admin/standards/{standardPublicId}/criteria")
     public ResponseEntity<ApiResponse<CriteriaResponse>> createCriteria(
             @PathVariable String standardPublicId,
@@ -270,7 +273,7 @@ public class AdminController {
         return ok("Tạo tiêu chí thành công", adminService.createCriteria(standardPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PutMapping("/admin/criteria/{criteriaPublicId}")
     public ResponseEntity<ApiResponse<CriteriaResponse>> updateCriteria(
             @PathVariable String criteriaPublicId,
@@ -280,7 +283,7 @@ public class AdminController {
         return ok("Cập nhật tiêu chí thành công", adminService.updateCriteria(criteriaPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PatchMapping("/admin/criteria/{criteriaPublicId}/requirement")
     public ResponseEntity<ApiResponse<CriteriaResponse>> updateCriteriaRequirement(
             @PathVariable String criteriaPublicId,
@@ -290,7 +293,7 @@ public class AdminController {
         return ok("Cập nhật yêu cầu tiêu chí thành công", adminService.updateCriteriaRequirement(criteriaPublicId, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @DeleteMapping("/admin/criteria/{criteriaPublicId}")
     public ResponseEntity<ApiResponse<Void>> deleteCriteria(
             @PathVariable String criteriaPublicId,
@@ -300,7 +303,7 @@ public class AdminController {
         return ok("Xóa tiêu chí thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
     @PatchMapping("/admin/criteria/{criteriaPublicId}/reorder")
     public ResponseEntity<ApiResponse<Void>> reorderCriteria(
             @PathVariable String criteriaPublicId,
@@ -334,7 +337,7 @@ public class AdminController {
         return ok("Lấy minh chứng thành công", adminService.getMyEvidence(evidencePublicId, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @GetMapping("/admin/evidences")
     public ResponseEntity<ApiResponse<PageResponse<EvidenceResponse>>> getAdminEvidences(
             @RequestParam(defaultValue = "0") int page,
@@ -349,13 +352,13 @@ public class AdminController {
         );
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @GetMapping("/admin/evidences/{evidencePublicId}")
     public ResponseEntity<ApiResponse<EvidenceResponse>> getAdminEvidence(@PathVariable String evidencePublicId) {
         return ok("Lấy minh chứng thành công", adminService.getAdminEvidence(evidencePublicId));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @PatchMapping("/admin/evidences/{evidencePublicId}/approve")
     public ResponseEntity<ApiResponse<EvidenceResponse>> approveEvidence(
             @PathVariable String evidencePublicId,
@@ -365,7 +368,7 @@ public class AdminController {
         return ok("Duyệt đạt minh chứng thành công", adminService.approveEvidence(evidencePublicId, comment, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @PatchMapping("/admin/evidences/{evidencePublicId}/comment")
     public ResponseEntity<ApiResponse<EvidenceResponse>> updateEvidenceComment(
             @PathVariable String evidencePublicId,
@@ -375,7 +378,7 @@ public class AdminController {
         return ok("Cập nhật nhận xét minh chứng thành công", adminService.updateReviewerComment(evidencePublicId, comment, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @PatchMapping("/admin/evidences/{evidencePublicId}/reject")
     public ResponseEntity<ApiResponse<EvidenceResponse>> rejectEvidence(
             @PathVariable String evidencePublicId,
@@ -385,7 +388,7 @@ public class AdminController {
         return ok("Từ chối minh chứng thành công", adminService.rejectEvidence(evidencePublicId, request, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @PatchMapping("/admin/evidences/bulk-approve")
     public ResponseEntity<ApiResponse<List<EvidenceResponse>>> bulkApprove(
             @Valid @RequestBody IdsRequest request,
@@ -394,7 +397,7 @@ public class AdminController {
         return ok("Duyệt hàng loạt thành công", adminService.bulkApprove(request, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @PatchMapping("/admin/evidences/bulk-reject")
     public ResponseEntity<ApiResponse<List<EvidenceResponse>>> bulkReject(
             @Valid @RequestBody IdsRequest request,
@@ -404,7 +407,7 @@ public class AdminController {
         return ok("Từ chối hàng loạt thành công", adminService.bulkReject(request, reason, authentication));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @GetMapping({"/admin/campaigns/{campaignPublicId}/results", "/admin/campaigns/results"})
     public ResponseEntity<ApiResponse<PageResponse<ResultResponse>>> getCampaignResults(
             @PathVariable(required = false) String campaignPublicId,
@@ -421,7 +424,7 @@ public class AdminController {
         );
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MENTOR')")
+    @PreAuthorize("hasRole('MENTOR') or (hasRole('ADMIN') and hasAuthority('EVIDENCE_REVIEW'))")
     @GetMapping("/admin/users/{userPublicId}/campaigns/{campaignPublicId}/criteria-tree")
     public ResponseEntity<ApiResponse<List<StandardDTO>>> getUserCriteriaTree(
             @PathVariable String userPublicId,
@@ -453,19 +456,19 @@ public class AdminController {
         );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @GetMapping("/admin/settings")
     public ResponseEntity<ApiResponse<List<SettingResponse>>> getSettings() {
         return ok("Lấy danh sách cấu hình thành công", adminService.getSettings());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @GetMapping("/admin/settings/{key}")
     public ResponseEntity<ApiResponse<SettingResponse>> getSetting(@PathVariable String key) {
         return ok("Lấy cấu hình thành công", adminService.getSetting(key));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @PostMapping("/admin/settings")
     public ResponseEntity<ApiResponse<SettingResponse>> createSetting(
             @Valid @RequestBody SettingRequest request,
@@ -474,7 +477,7 @@ public class AdminController {
         return ok("Tạo cấu hình thành công", adminService.createSetting(request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @PutMapping("/admin/settings/{key}")
     public ResponseEntity<ApiResponse<SettingResponse>> updateSetting(
             @PathVariable String key,
@@ -484,7 +487,7 @@ public class AdminController {
         return ok("Cập nhật cấu hình thành công", adminService.updateSetting(key, request, authentication));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @DeleteMapping("/admin/settings/{key}")
     public ResponseEntity<ApiResponse<Void>> deleteSetting(
             @PathVariable String key,
@@ -494,7 +497,7 @@ public class AdminController {
         return ok("Xóa cấu hình thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('SETTING_MANAGE')")
     @GetMapping("/admin/dashboard")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -503,19 +506,19 @@ public class AdminController {
         return ok("Lấy dữ liệu tổng quan thành công", adminService.getDashboard(from, to));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @GetMapping("/admin/roles")
     public ResponseEntity<ApiResponse<List<Role>>> getRoles() {
         return ok("Lấy danh sách vai trò thành công", adminService.getRoles());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @GetMapping("/admin/permissions")
     public ResponseEntity<ApiResponse<List<Permission>>> getPermissions() {
         return ok("Lấy danh sách quyền thành công", adminService.getPermissions());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('USER_MANAGE')")
     @PatchMapping("/admin/users/{userPublicId}/permissions")
     public ResponseEntity<ApiResponse<Void>> updateUserPermissions(
             @PathVariable String userPublicId,
@@ -526,7 +529,7 @@ public class AdminController {
         return ok("Cập nhật quyền thành công", null);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('AUDIT_LOG_VIEW')")
     @GetMapping("/admin/audit-logs")
     public ResponseEntity<ApiResponse<PageResponse<AuditLog>>> getAuditLogs(
             @RequestParam(defaultValue = "0") int page,
@@ -536,6 +539,41 @@ public class AdminController {
             @RequestParam(required = false) Long userId
     ) {
         return ok("Lấy nhật ký thao tác thành công", adminService.getAuditLogs(page, size, entity, action, userId));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
+    @GetMapping("/admin/criteria-templates")
+    public ResponseEntity<ApiResponse<List<CriteriaTemplateResponse>>> getCriteriaTemplates() {
+        return ok("Lấy danh sách tiêu chí mẫu thành công", adminService.getCriteriaTemplates());
+    }
+
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
+    @PostMapping("/admin/criteria-templates")
+    public ResponseEntity<ApiResponse<CriteriaTemplateResponse>> createCriteriaTemplate(
+            @Valid @RequestBody CriteriaTemplateRequest request,
+            Authentication authentication
+    ) {
+        return ok("Tạo tiêu chí mẫu thành công", adminService.createCriteriaTemplate(request, authentication));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
+    @PutMapping("/admin/criteria-templates/{publicId}")
+    public ResponseEntity<ApiResponse<CriteriaTemplateResponse>> updateCriteriaTemplate(
+            @PathVariable String publicId,
+            @Valid @RequestBody CriteriaTemplateRequest request,
+            Authentication authentication
+    ) {
+        return ok("Cập nhật tiêu chí mẫu thành công", adminService.updateCriteriaTemplate(publicId, request, authentication));
+    }
+
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('CRITERIA_MANAGE')")
+    @DeleteMapping("/admin/criteria-templates/{publicId}")
+    public ResponseEntity<ApiResponse<Void>> deleteCriteriaTemplate(
+            @PathVariable String publicId,
+            Authentication authentication
+    ) {
+        adminService.deleteCriteriaTemplate(publicId, authentication);
+        return ok("Xóa tiêu chí mẫu thành công", null);
     }
 
     private <T> ResponseEntity<ApiResponse<T>> ok(String message, T data) {
